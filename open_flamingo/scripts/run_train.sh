@@ -12,22 +12,45 @@
 
 # export PYTHONPATH="$PYTHONPATH:open_flamingo"
 
-torchrun --nnodes=1 --nproc_per_node=8 open_flamingo/open_flamingo/train/train.py \
+
+torchrun --nnodes=1 --nproc_per_node=8 ../train/train.py \
     --lm_path anas-awadalla/mpt-1b-redpajama-200b \
     --tokenizer_path anas-awadalla/mpt-1b-redpajama-200b \
     --cross_attn_every_n_layers 1 \
-    --dataset_resampled \
-    --batch_size_mmc4 32 \
-    --batch_size_laion 64 \
-    --train_num_samples_mmc4 125000\
-    --train_num_samples_laion 250000 \
-    --loss_multiplier_laion 0.2 \
-    --workers=4 \
-    --run_name OpenFlamingo-3B-vitl-mpt1b \
-    --num_epochs 480 \
-    --warmup_steps  1875 \
-    --mmc4_textsim_threshold 0.24 \
-    --laion_shards "/path/to/shards/shard-{0000..0999}.tar" \
-    --mmc4_shards "/path/to/shards/shard-{0000..0999}.tar" \
+    --dataset_type "llavamed" \
+    --batch_size 32 \
+    --max_tokens 512 \
+    --workers 4 \
+    --run_name MedFlamingo-MRI-CoT \
+    --train_json_path "/mnt/data/maund/open_med_flamingo/open_flamingo/data/CoT/llava_med_mri_bbox_train_CoT_new.json" \
+    --image_dir "/mnt/data/maund/open_med_flamingo/open_flamingo/data/images" \
+    --num_epochs 10 \
     --gradient_checkpointing \
+    --learning_rate 1e-5 \
+    --warmup_steps 100 \
+    --weight_decay 0.05 \
+    --gradient_accumulation_steps 1
+
+
+
+
+
+# torchrun --nnodes=1 --nproc_per_node=8 open_flamingo/open_flamingo/train/train.py \
+#     --lm_path anas-awadalla/mpt-1b-redpajama-200b \
+#     --tokenizer_path anas-awadalla/mpt-1b-redpajama-200b \
+#     --cross_attn_every_n_layers 1 \
+#     --dataset_resampled \
+#     --batch_size_mmc4 32 \
+#     --batch_size_laion 64 \
+#     --train_num_samples_mmc4 125000\
+#     --train_num_samples_laion 250000 \
+#     --loss_multiplier_laion 0.2 \
+#     --workers=4 \
+#     --run_name OpenFlamingo-3B-vitl-mpt1b \
+#     --num_epochs 480 \
+#     --warmup_steps  1875 \
+#     --mmc4_textsim_threshold 0.24 \
+#     --laion_shards "/path/to/shards/shard-{0000..0999}.tar" \
+#     --mmc4_shards "/path/to/shards/shard-{0000..0999}.tar" \
+#     --gradient_checkpointing \
 # --report_to_wandb \
