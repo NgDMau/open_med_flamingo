@@ -471,6 +471,118 @@ def get_laion_dataset(args, image_processor, tokenizer, epoch=0, floor=False):
     return DataInfo(dataloader=dataloader, shared_epoch=shared_epoch)
 
 
+class CustomJSONDataset(Dataset):
+    def __init__(self, json_path, image_dir, image_processor, tokenizer, max_tokens=256):
+        """
+        Args:
+            json_path: Path to your JSON file with data
+            image_dir: Directory where images are stored
+            image_processor: Vision processor for images
+            tokenizer: Tokenizer for text
+            max_tokens: Maximum number of tokens for text
+        """
+        with open(json_path, 'r') as f:
+            self.data = json.load(f)
+        
+        self.image_dir = image_dir
+        self.image_processor = image_processor
+        self.tokenizer = tokenizer
+        self.max_tokens = max_tokens
+        
+        # Get special token IDs
+        self.media_token_id = tokenizer.convert_tokens_to_ids("<image>")
+        
+    def __len__(self):
+        return len(self.data)
+    
+    def __getitem__(self, idx):
+        item = self.data[idx]
+        
+        # Load image
+        image_path = os.path.join(self.image_dir, item['image'])
+        image = Image.open(image_path).convert('RGB')
+        
+        # Process image
+        image_tensor = self.image_processor(image)
+        
+        # Get conversation
+        conversation = item['conversations']
+        
+        # Format text with proper tokens 
+        # Find human prompt with <image> tag
+        human_prompt = next(msg['value'] for msg in conversation if msg['from'] == 'human')
+        
+        # Get GPT response
+        gpt_response = next(msg['value'] for msg in conversation if msg['from'] == 'gpt')
+        
+        # Format as required by the model
+        # Keep <image> token in the human prompt
+        formatted_text = f"{human_prompt}{gpt_response}<|endofchunk|>{self.tokenizer.eos_token}"
+        
+        # Tokenize
+        encoding = self.tokenizer(
+            formatted_text,
+            max_length=self.max_tokens,
+            padding="max_length",
+            truncation=True,
+            return_tensors="pt"
+        )
+        
+        input_ids = encoding["input_ids"].squeeze(0)
+        attention_mask = encoding["attention_mask"].squeeze(0)
+        
+        return image_tensor, (input_ids, attention_mask)
+    
+    @staticmethod
+    def collate_fn(batch):
+        """Custom collate function to handle the batch creation"""
+        images, text_data = zip(*batch)
+        input_ids, attention_mask = zip(*text_data)
+        
+        # Stack images - needs reshaping for Flamingo format (b t f c h w)
+        images = torch.stack(images)  # Shape: (b, c, h, w)
+        images = images.unsqueeze(1).unsqueeze(2)  # Shape: (b, 1, 1, c, h, w)
+        
+        # Stack text data
+        input_ids = torch.stack(input_ids)
+        attention_mask = torch.stack(attention_mask)
+        
+        return images, (input_ids, attention_mask)
+    
+
+def get_llavamed_dataset(args, image_processor, tokenizer, epoch=0, floor=False):
+    """
+    Load dataset from JSON files
+    """
+    # Create datasets for train/val
+    train_dataset = CustomJSONDataset(
+        json_path=args.train_json_path,
+        image_dir=args.image_dir,
+        image_processor=image_processor,
+        tokenizer=tokenizer,
+        max_tokens=args.max_tokens
+    )
+    
+    # Create dataloaders
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=args.batch_size,
+        shuffle=True,
+        num_workers=args.workers,
+        collate_fn=CustomJSONDataset.collate_fn
+    )
+    
+    # Add metadata for compatibility with existing code
+    train_loader.num_samples = len(train_dataset)
+    train_loader.num_batches = len(train_loader)
+    
+    # Create a placeholder shared epoch (to maintain interface consistency)
+    shared_epoch = SharedEpoch(epoch=epoch)
+    
+    # Return DataInfo object as expected by the training code
+    return DataInfo(dataloader=train_loader, shared_epoch=shared_epoch)
+
+
 def get_dataset_fn(dataset_type):
     """
     Helper function to get the dataset function based on the dataset type
@@ -479,6 +591,8 @@ def get_dataset_fn(dataset_type):
         return get_laion_dataset
     elif dataset_type == "mmc4":
         return get_mmc4_dataset
+    elif dataset_type == "llavamed":  # Add our dataset type
+        return get_llavamed_dataset
     else:
         raise ValueError(f"Unsupported dataset type: {dataset_type}")
 

@@ -215,6 +215,12 @@ def main():
         action="store_true",
         help="save checkpoints to wandb",
     )
+    # New args for training with Llavamed of image-text datasets from Nghiem
+    parser.add_argument("--train-json-path", type=str, default=None, help="Path to training JSON file")
+    parser.add_argument("--val-json-path", type=str, default=None, help="Path to validation JSON file (optional)")
+    parser.add_argument("--image-dir", type=str, default=None, help="Directory containing images")
+    parser.add_argument("--max-tokens", type=int, default=256, help="Maximum number of tokens for text")
+    parser.add_argument("--dataset-type", type=str, default="llavamed", help="Dataset type (llavamed, image_text, mmc4)")
 
     args = parser.parse_args()
 
@@ -457,10 +463,15 @@ def main():
     ddp_model.train()
 
     for epoch in range(resume_from_epoch, args.num_epochs):
-        laion_dataset.set_epoch(epoch)
-        laion_loader = laion_dataset.dataloader
-        mmc4_dataset.set_epoch(epoch)
-        mmc4_loader = mmc4_dataset.dataloader
+        # laion_dataset.set_epoch(epoch)
+        # laion_loader = laion_dataset.dataloader
+        # mmc4_dataset.set_epoch(epoch)
+        # mmc4_loader = mmc4_dataset.dataloader
+        
+        # In your training script
+        llavamed_dataset = get_data(args, image_processor, tokenizer, args.dataset_type, epoch)
+        llavamed_dataset.set_epoch(epoch)
+        data_loader = llavamed_dataset.dataloader
 
         train_one_epoch(
             args=args,
@@ -469,8 +480,9 @@ def main():
             tokenizer=tokenizer,
             optimizer=optimizer,
             lr_scheduler=lr_scheduler,
-            laion_loader=laion_loader,
-            mmc4_loader=mmc4_loader,
+            # laion_loader=laion_loader,
+            # mmc4_loader=mmc4_loader,
+            data_loader=data_loader,
             device_id=device_id,
             wandb=wandb,
         )
