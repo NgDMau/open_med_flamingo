@@ -85,6 +85,7 @@ def main():
         action="store_true",
         help="delete previous checkpoint when saving new checkpoint",
     )
+    parser.add_argument("--batch_size", type=int, default=128)
     parser.add_argument("--batch_size_mmc4", type=int, default=128)
     parser.add_argument("--batch_size_laion", type=int, default=128)
     parser.add_argument("--gradient_accumulation_steps", type=int, default=1)
@@ -216,19 +217,20 @@ def main():
         help="save checkpoints to wandb",
     )
     # New args for training with Llavamed of image-text datasets from Nghiem
-    parser.add_argument("--train-json-path", type=str, default=None, help="Path to training JSON file")
-    parser.add_argument("--val-json-path", type=str, default=None, help="Path to validation JSON file (optional)")
-    parser.add_argument("--image-dir", type=str, default=None, help="Directory containing images")
-    parser.add_argument("--max-tokens", type=int, default=256, help="Maximum number of tokens for text")
-    parser.add_argument("--dataset-type", type=str, default="llavamed", help="Dataset type (llavamed, image_text, mmc4)")
+    parser.add_argument("--train_json_path", type=str, default=None, help="Path to training JSON file")
+    parser.add_argument("--val_json_path", type=str, default=None, help="Path to validation JSON file (optional)")
+    parser.add_argument("--image_dir", type=str, default=None, help="Directory containing images")
+    parser.add_argument("--max_tokens", type=int, default=256, help="Maximum number of tokens for text")
+    parser.add_argument("--dataset_type", type=str, default="llavamed", help="Dataset type (llavamed, image_text, mmc4)")
+    parser.add_argument("--train_num_samples", type=int, default=256, help="Maximum number of tokens for text")
 
     args = parser.parse_args()
 
     # Validate args
-    if args.laion_shards.startswith("s3"):
+    if args.laion_shards and args.laion_shards.startswith("s3"):
         args.laion_shards = f"pipe:aws s3 cp {args.laion_shards} -"
 
-    if args.mmc4_shards.startswith("s3"):
+    if args.mmc4_shards and args.mmc4_shards.startswith("s3"):
         args.mmc4_shards = f"pipe:aws s3 cp {args.mmc4_shards} -"
 
     if args.save_checkpoints_to_wandb and not args.report_to_wandb:
@@ -428,10 +430,10 @@ def main():
         optimizer.load_state_dict(osd)
 
     # Initialize data loaders
-    laion_dataset = get_data(args, image_processor, tokenizer, "image_text")
-    mmc4_dataset = get_data(args, image_processor, tokenizer, "mmc4")
+    # laion_dataset = get_data(args, image_processor, tokenizer, "image_text")
+    # mmc4_dataset = get_data(args, image_processor, tokenizer, "mmc4")
     total_training_steps = (
-        (args.train_num_samples_mmc4) // (args.batch_size_mmc4 * args.world_size)
+        (args.train_num_samples) // (args.batch_size * args.world_size)
     ) * args.num_epochs
 
     if args.rank == 0:
