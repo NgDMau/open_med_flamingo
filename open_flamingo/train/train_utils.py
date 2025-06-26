@@ -86,7 +86,8 @@ def train_one_epoch(
         global_step = num_steps + epoch * num_batches_per_epoch
 
         images = batch[0].to(device_id, dtype=cast_dtype, non_blocking=True)
-        images = rearrange(images, "(b t f) c h w -> b t f c h w", t=1, f=1)
+        # The below line is commented out as I got error: Wrong shape: expected 4 dims. Received 6-dim tensor.  Input tensor shape: torch.Size([16, 1, 1, 3, 224, 224]). Additional info: {'t': 1, 'f': 1}.
+        # images = rearrange(images, "(b t f) c h w -> b t f c h w", t=1, f=1)  
         input_ids = batch[1][0].to(device_id, dtype=cast_dtype, non_blocking=True)
         attention_mask = batch[1][1].to(device_id, dtype=cast_dtype, non_blocking=True)
 
@@ -276,7 +277,9 @@ def save_checkpoint(model, optimizer, lr_scheduler, epoch, args):
         FSDP.set_state_dict_type(
             model,
             StateDictType.FULL_STATE_DICT,
-            FullStateDictConfig(rank0_only=True, offload_to_cpu=True),
+            FullStateDictConfig(rank0_only=True,
+                                # offload_to_cpu=True # Commented out to avoid: TypeError: Flamingo.forward() got an unexpected keyword argument 'offload_to_cpu'
+                                ),
             FullOptimStateDictConfig(rank0_only=True),
         )
         model_state = model.state_dict()

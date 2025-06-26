@@ -377,7 +377,7 @@ def main():
     if args.gradient_checkpointing:
         non_reentrant_wrapper = functools.partial(
             checkpoint_wrapper,
-            offload_to_cpu=True,
+            # offload_to_cpu=True,
             checkpoint_impl=CheckpointImpl.NO_REENTRANT,
         )
         apply_activation_checkpointing(

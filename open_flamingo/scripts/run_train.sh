@@ -39,14 +39,14 @@ torchrun --nnodes=1 --nproc_per_node=4 train/train.py \
     --tokenizer_path anas-awadalla/mpt-1b-redpajama-200b \
     --cross_attn_every_n_layers 1 \
     --dataset_type llavamed \
-    --batch_size 16 \
+    --batch_size 32 \
     --max_tokens 256 \
     --workers 4 \
     --run_name MedFlamingo-MRI-CoT \
-    --train_num_samples 1000 \
+    --train_num_samples 100 \
     --train_json_path "/mnt/data/maund/open_med_flamingo/open_flamingo/data/CoT/llava_med_mri_bbox_train_CoT_new.json" \
     --image_dir "/mnt/data/maund/open_med_flamingo/open_flamingo/data/images" \
-    --num_epochs 10 \
+    --num_epochs 2 \
     --gradient_checkpointing \
     --learning_rate 1e-5 \
     --warmup_steps 100 \
