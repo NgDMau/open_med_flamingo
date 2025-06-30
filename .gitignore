@@ -146,3 +146,4 @@ cache/
 __*.sh
 
 open_flamingo/data/
+all_extracted_images/*
