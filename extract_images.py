@@ -41,9 +41,6 @@ def extract_images_with_original_names(output_dir="extracted_images", max_images
             if 'image' in example:
                 image_data = example['image']
                 if hasattr(image_data, 'save'):  # PIL Image
-                    
-                    clean_filename = f"{example['No.']}.jpg" # Added to align with Phat's code
-                    
                     image_path = os.path.join(split_dir, clean_filename)
                     image_data.save(image_path)
                     extracted_count += 1

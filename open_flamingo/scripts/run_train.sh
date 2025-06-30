@@ -4,10 +4,10 @@
 #SBATCH --gpus-per-task=1
 
 # Enable CUDA error debugging
-export CUDA_LAUNCH_BLOCKING=1
-export NCCL_DEBUG=INFO
-export NCCL_DEBUG_SUBSYS=ALL
-export PYTHONFAULTHANDLER=1
+# export CUDA_LAUNCH_BLOCKING=1
+# export NCCL_DEBUG=INFO
+# export NCCL_DEBUG_SUBSYS=ALL
+# export PYTHONFAULTHANDLER=1
 
 # Set NCCL timeout and retry settings
 export NCCL_TIMEOUT=600
@@ -45,7 +45,7 @@ torchrun --nnodes=1 --nproc_per_node=4 train/train.py \
     --run_name MedFlamingo-MRI-CoT \
     --train_num_samples 100 \
     --train_json_path "/mnt/data/maund/open_med_flamingo/open_flamingo/data/CoT/llava_med_mri_bbox_train_CoT_new.json" \
-    --image_dir "/mnt/data/maund/open_med_flamingo/open_flamingo/data/images" \
+    --image_dir "/mnt/data/maund/open_med_flamingo/open_flamingo/scripts/all_extracted_images/train" \
     --num_epochs 2 \
     --gradient_checkpointing \
     --learning_rate 1e-5 \
