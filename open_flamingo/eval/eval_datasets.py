@@ -8,6 +8,57 @@ from torchvision.datasets import ImageFolder
 from open_flamingo.eval.classification_utils import IMAGENET_CLASSNAMES
 
 
+
+class LLaVaMedDataset(Dataset):
+    def __init__(
+        self,
+        image_dir_path,
+        annotations_path,
+        is_train=False,
+    ):
+        self.image_dir_path = image_dir_path
+        self.annotations_path = annotations_path
+        self.is_train = is_train
+        
+        # Load annotations
+        with open(annotations_path, "r") as f:
+            self.data = json.load(f)
+    
+    def __len__(self):
+        return len(self.data)
+    
+    def __getitem__(self, idx):
+        item = self.data[idx]
+        
+        # Extract image path
+        image_filename = item["image"]
+        image_path = os.path.join(self.image_dir_path, image_filename)
+        
+        # Load image
+        image = Image.open(image_path).convert("RGB")
+        
+        # Extract question and answer from conversations
+        question = None
+        answer = None
+        
+        for conv in item.get("conversations", []):
+            if conv["from"] == "human":
+                # Remove <image> tag from question
+                question = conv["value"].replace("<image>", "").strip()
+            elif conv["from"] == "gpt":
+                answer = conv["value"].strip()
+        
+        if question is None or answer is None:
+            raise ValueError(f"Invalid conversation format in item {idx}")
+        
+        return {
+            "image": image,
+            "question": question,
+            "answer": answer,
+            "sample_id": item.get("id", str(idx)),
+        }
+
+
 class CaptionDataset(Dataset):
     def __init__(
         self,
