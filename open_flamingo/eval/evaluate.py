@@ -14,6 +14,7 @@ import math
 
 import json
 import re
+from datetime import datetime
 
 from coco_metric import compute_cider, postprocess_captioning_generation
 from eval_datasets import (
@@ -385,8 +386,9 @@ def evaluate_llavamed(
     ]
     
     # Save predictions
+    timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M")
     random_uuid = str(uuid.uuid4())
-    results_file = f"llavamed_results_{random_uuid}.json"
+    results_file = f"llavamed_results_{timestamp}_{random_uuid}.json"
     with open(results_file, "w") as f:
         json.dump(all_predictions, f, indent=4)
     

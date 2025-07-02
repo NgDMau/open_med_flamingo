@@ -307,9 +307,18 @@ def main():
         if args.rank == 0:
             print(f"Loading checkpoint from {args.resume_from_checkpoint}")
         checkpoint = torch.load(args.resume_from_checkpoint, map_location="cpu")
-        msd = checkpoint["model_state_dict"]
+        # msd = checkpoint["model_state_dict"]
+        msd = torch.load(args.resume_from_checkpoint)
+        
         msd = {k.replace("module.", ""): v for k, v in msd.items()}
-        resume_from_epoch = checkpoint["epoch"] + 1
+        if "epoch" in checkpoint:
+            resume_from_epoch = checkpoint["epoch"] + 1
+        else:
+            print(
+                "Warning: No epoch found in checkpoint, resuming from epoch 0. "
+                "This may cause issues if the checkpoint was saved after multiple epochs."
+            )
+            resume_from_epoch = 0
 
         # for fsdp, only one rank needs to load the state dict
         if not args.fsdp or args.rank == 0:
@@ -423,11 +432,16 @@ def main():
         )
 
     # load optimizer checkpoint
+    # Replace lines 435-439 with:
     if args.resume_from_checkpoint is not None:
-        osd = checkpoint["optimizer_state_dict"]
-        if args.fsdp:
-            osd = FSDP.optim_state_dict_to_load(osd, ddp_model, optimizer)
-        optimizer.load_state_dict(osd)
+        if "optimizer_state_dict" in checkpoint:
+            osd = checkpoint["optimizer_state_dict"]
+            if args.fsdp:
+                osd = FSDP.optim_state_dict_to_load(osd, ddp_model, optimizer)
+            optimizer.load_state_dict(osd)
+            print("Loaded optimizer state from checkpoint")
+        else:
+            print("Warning: No optimizer_state_dict found in checkpoint. Starting with fresh optimizer.")
 
     # Initialize data loaders
     # laion_dataset = get_data(args, image_processor, tokenizer, "image_text")
@@ -458,13 +472,26 @@ def main():
         )
 
     # load lr scheduler checkpoint
+    # Replace the lr_scheduler loading section (around line 478-480) with:
     if args.resume_from_checkpoint is not None:
-        lr_scheduler.load_state_dict(checkpoint["lr_scheduler_state_dict"])
+        if "lr_scheduler_state_dict" in checkpoint:
+            lr_scheduler.load_state_dict(checkpoint["lr_scheduler_state_dict"])
+            print("Loaded lr_scheduler state from checkpoint")
+        else:
+            print("Warning: No lr_scheduler_state_dict found in checkpoint. Starting with fresh lr_scheduler.")
 
     # Start training!
     ddp_model.train()
 
-    for epoch in range(resume_from_epoch, args.num_epochs):
+    if args.resume_from_checkpoint and "epoch" in checkpoint:
+        overall_num_epochs = checkpoint["epoch"] + args.num_epochs
+        print(f"Resuming from epoch {checkpoint['epoch']}, will train for {args.num_epochs} more epochs")
+    else:
+        overall_num_epochs = args.num_epochs
+        print(f"Starting fresh training for {args.num_epochs} epochs")
+        
+    # for epoch in range(resume_from_epoch, args.num_epochs):
+    for epoch in range(resume_from_epoch, overall_num_epochs):
         # laion_dataset.set_epoch(epoch)
         # laion_loader = laion_dataset.dataloader
         # mmc4_dataset.set_epoch(epoch)
