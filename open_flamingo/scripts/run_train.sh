@@ -34,19 +34,19 @@ echo "Checking GPU availability..."
 nvidia-smi
 
 # Reduce number of processes initially to test
-torchrun --nnodes=1 --nproc_per_node=4 train/train.py \
+torchrun --nnodes=1 --nproc_per_node=1 train/train.py \
     --lm_path anas-awadalla/mpt-1b-redpajama-200b \
     --tokenizer_path anas-awadalla/mpt-1b-redpajama-200b \
     --cross_attn_every_n_layers 1 \
     --dataset_type llavamed \
-    --batch_size 64 \
+    --batch_size 2 \
     --max_tokens 512 \
-    --workers 4 \
+    --workers 1 \
     --run_name MedFlamingo-MRI-CoT-Finetune \
-    --resume_from_checkpoint "/home/anhnv16/.cache/huggingface/hub/models--openflamingo--OpenFlamingo-3B-vitl-mpt1b/snapshots/ed3a0c3190b2fc2d1c39630738896d4e73ce1bbc/checkpoint.pt" \
-    --train_num_samples 10000 \
-    --train_json_path "/mnt/data/maund/open_med_flamingo/open_flamingo/data/CoT/llava_med_mri_bbox_train_CoT_new.json" \
-    --image_dir "/mnt/data/maund/open_med_flamingo/open_flamingo/scripts/all_extracted_images/train" \
+    --resume_from_checkpoint "/home/mau_nguyen_dinh_caddi_jp/.cache/huggingface/hub/models--openflamingo--OpenFlamingo-3B-vitl-mpt1b/snapshots/ed3a0c3190b2fc2d1c39630738896d4e73ce1bbc/checkpoint.pt" \
+    --train_num_samples 50 \
+    --train_json_path "/home/mau_nguyen_dinh_caddi_jp/projects/dataset/vlm-project-with-images-with-bbox-images-v4/llava_med_mri_bbox_train_CoT_new.json" \
+    --image_dir "/home/mau_nguyen_dinh_caddi_jp/projects/dataset/vlm-project-with-images-with-bbox-images-v4/images/train" \
     --num_epochs 10 \
     --gradient_checkpointing \
     --learning_rate 5e-6 \
