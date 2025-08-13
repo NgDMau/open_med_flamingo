@@ -1,12 +1,9 @@
 name: openflamingo
 channels:
+  - conda-forge
   - defaults
 dependencies:
+  - pip
   - python=3.9
   - conda-forge::openjdk
-  - pip
-  - pip:
-    - -r requirements.txt
-    - -r requirements-training.txt
-    - -r requirements-eval.txt
-    - -e .
+prefix: /opt/conda/envs/openflamingo

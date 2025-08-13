@@ -25,6 +25,10 @@ If you have any questions, please feel free to open an issue. We also welcome co
 - [Citing](#citing)
 
 # Installation
+New: to install fill env that works as for 2025, please just run
+```
+conda env create -f environment_full.yml
+```
 
 To install the package in an existing environment, run 
 ```
