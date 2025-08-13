@@ -48,7 +48,10 @@ query_image = Image.open(
     ).raw
 )
 
-query_image = Image.open("/home/mau_nguyen_dinh_caddi_jp/projects/dataset/vlm-project-with-images-with-bbox-images-v4/images/test/238.jpg")  # Local image for testing
+
+# query_image = Image.open("/home/mau_nguyen_dinh_caddi_jp/projects/dataset/vlm-project-with-images-with-bbox-images-v4/images/test/238.jpg")  # Local image for testing
+# query_prompt = "<image>What's the potency of this disease?\n\n+ Reasoning:\n- Step 1: Determine the affected region\n- Answer: ```json\n[{\"bbox_2d\": [134, 10, 245, 66], \"label\": \"disease area\"}, {\"bbox_2d\": [91, 132, 200, 180], \"label\": \"disease area\"}, {\"bbox_2d\": [157, 170, 264, 217], \"label\": \"disease area\"}]\n```\n- Step 2: How would you identify the visual hallmarks of this lesion?\n- Answer: Moderate atrophy volume loss of gyri. Substantial widening of parietal sulci. Central atrophy, enlarged lateral ventricular body width.\n- Step 3: How would you characterize the grade of this lesion?\n- Answer: GCA = 2\n\n+ Final Answer:"
+query_prompt = "<image>What is it ?"
 
 
 """
@@ -74,7 +77,7 @@ Details: In the text we expect an <image> special token to indicate where an ima
 tokenizer.padding_side = "left" # For generation padding tokens should be on the left
 lang_x = tokenizer(
     # ["<image>What is it? An image of two cats.<|endofchunk|><image>What is it? An image of a bathroom sink.<|endofchunk|><image>What is it?"],
-    ["<image>What is it?"],    
+    [query_prompt],    
     return_tensors="pt",
 )
 
