@@ -148,4 +148,4 @@ __*.sh
 open_flamingo/data/
 all_extracted_images/*
 open_flamingo/scripts/all_extracted_images/
-images/*
+data/images/*
