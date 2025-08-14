@@ -1,5 +1,5 @@
 *.pt
-*.json
+# *.json
 
 wandb/
 
