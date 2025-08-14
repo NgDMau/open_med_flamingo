@@ -70,6 +70,8 @@ def train_one_epoch(
     ][-1]
     model.train()
 
+    total_train_loss = 0.0
+
     # setup logging
     step_time_m = AverageMeter()
     data_time_m = AverageMeter()
@@ -109,6 +111,8 @@ def train_one_epoch(
                 attention_mask=attention_mask,
                 labels=labels,
             )[0]
+
+        total_train_loss += loss.item()
 
         divided_loss = loss / args.gradient_accumulation_steps
         (divided_loss).backward()
@@ -168,6 +172,56 @@ def train_one_epoch(
                 f"Step {num_steps+1}/{num_batches_per_epoch} of epoch {epoch+1}/{args.num_epochs} complete. Loss MedFlamingo: {loss.item():.3f}"
             )
 
+        avg_train_loss = total_train_loss / num_batches_per_epoch
+        return avg_train_loss
+
+def validate_one_epoch(args, model, data_loader, tokenizer, device_id):
+    """
+    Runs a validation loop for one epoch to calculate the validation loss.
+    """
+    model.eval()  # Set the model to evaluation mode
+    
+    autocast = get_autocast(args.precision)
+    cast_dtype = get_cast_dtype(args.precision)
+    
+    media_token_id = tokenizer("<image>", add_special_tokens=False)["input_ids"][-1]
+    
+    total_val_loss = 0.0
+    num_val_batches = data_loader.num_batches
+
+    # Loop through the validation dataloader
+    with torch.no_grad():  # Disable gradient calculations for validation
+        for batch in tqdm(data_loader, disable=args.rank != 0, desc="Validating"):
+            
+            # Unpack batch and move to device
+            images = batch[0].to(device_id, dtype=cast_dtype, non_blocking=True)
+            input_ids, attention_mask, target_mask = batch[1]
+            
+            input_ids = input_ids.to(device_id, non_blocking=True)
+            attention_mask = attention_mask.to(device_id, non_blocking=True)
+            target_mask = target_mask.to(device_id, non_blocking=True)
+
+            # Create labels using the same masking logic as in training
+            labels = input_ids.clone()
+            labels[~target_mask] = -100
+            labels[labels == tokenizer.pad_token_id] = -100
+            labels[labels == media_token_id] = -100
+            labels = labels.to(device_id)
+
+            # Forward pass to get the loss
+            with autocast():
+                loss = model(
+                    vision_x=images,
+                    lang_x=input_ids,
+                    attention_mask=attention_mask,
+                    labels=labels,
+                )[0]
+            
+            total_val_loss += loss.item()
+
+    # Calculate the average validation loss
+    avg_val_loss = total_val_loss / num_val_batches
+    return avg_val_loss
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""

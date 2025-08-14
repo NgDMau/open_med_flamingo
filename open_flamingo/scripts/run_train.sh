@@ -40,7 +40,7 @@ torchrun --nnodes=1 --nproc_per_node=1 train/train.py \
     --lm_path anas-awadalla/mpt-1b-redpajama-200b \
     --tokenizer_path anas-awadalla/mpt-1b-redpajama-200b \
     --cross_attn_every_n_layers 1 \
-    --dataset_type llavamed \
+    --dataset_name llavamed \
     --batch_size 2 \
     --max_tokens 256 \
     --workers 1 \

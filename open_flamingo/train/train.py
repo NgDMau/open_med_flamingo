@@ -14,6 +14,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 from train_utils import (
     train_one_epoch,
+    validate_one_epoch,
     get_mp_policy_dtype,
     save_checkpoint,
 )
@@ -498,11 +499,15 @@ def main():
         # mmc4_loader = mmc4_dataset.dataloader
         
         # In your training script
-        llavamed_dataset = get_data(args, image_processor, tokenizer, args.dataset_type, epoch)
-        llavamed_dataset.set_epoch(epoch)
-        data_loader = llavamed_dataset.dataloader
+        llavamed_train_dataset = get_data(args, image_processor, tokenizer, args.dataset_name, epoch, type="train")
+        llavamed_train_dataset.set_epoch(epoch)
+        train_data_loader = llavamed_train_dataset.dataloader
 
-        train_one_epoch(
+        llavamed_val_dataset = get_data(args, image_processor, tokenizer, args.dataset_name, epoch, type="train")
+        llavamed_val_dataset.set_epoch(epoch)
+        val_data_loader = llavamed_val_dataset.dataloader
+
+        avg_train_loss = train_one_epoch(
             args=args,
             model=ddp_model,
             epoch=epoch,
@@ -511,10 +516,19 @@ def main():
             lr_scheduler=lr_scheduler,
             # laion_loader=laion_loader,
             # mmc4_loader=mmc4_loader,
-            data_loader=data_loader,
+            data_loader=train_data_loader,
             device_id=device_id,
             wandb=wandb,
         )
+
+        avg_val_loss = validate_one_epoch(
+            args, model, val_data_loader, tokenizer, device_id
+        )
+
+        print(f"Epoch {epoch+1} Summary:")
+        print(f"  Average Training Loss: {avg_train_loss:.4f}")
+        print(f"  Average Validation Loss: {avg_val_loss:.4f}")
+
         save_checkpoint(ddp_model, optimizer, lr_scheduler, epoch, args)
 
     # save final checkpoint

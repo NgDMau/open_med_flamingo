@@ -270,7 +270,7 @@ def preprocess_interleaved(
     )
 
 
-def get_mmc4_dataset(args, image_processor, tokenizer, epoch=0, floor=False):
+def get_mmc4_dataset(args, image_processor, tokenizer, epoch=0, floor=False, type="train"):
     """
     Initialize webdataset for MMC4 / ChatGPT sequences
     """
@@ -371,7 +371,7 @@ def get_mmc4_dataset(args, image_processor, tokenizer, epoch=0, floor=False):
     return DataInfo(dataloader=dataloader, shared_epoch=shared_epoch)
 
 
-def get_laion_dataset(args, image_processor, tokenizer, epoch=0, floor=False):
+def get_laion_dataset(args, image_processor, tokenizer, epoch=0, floor=False, type="train"):
     """
     Initialize webdataset for LAION data
     """
@@ -574,22 +574,32 @@ class CustomJSONDataset(Dataset):
         return images, (input_ids, attention_mask, target_mask)
 
 
-def get_llavamed_dataset(args, image_processor, tokenizer, epoch=0, floor=False):
+def get_llavamed_dataset(args, image_processor, tokenizer, epoch=0, floor=False, type="train"):
     """
     Load dataset from JSON files
     """
-    # Create datasets for train/val
-    train_dataset = CustomJSONDataset(
-        json_path=args.train_json_path,
-        image_dir=args.image_dir,
+    if type == "val":
+        json_path = args.val_json_path if hasattr(args, 'val_json_path') else args.train_json_path
+        image_dir = args.val_image_dir if hasattr(args, 'val_image_dir') else args.image_dir
+    elif type == "test":
+        json_path = args.test_json_path if hasattr(args, 'test_json_path') else args.train_json_path
+        image_dir = args.test_image_dir if hasattr(args, 'test_image_dir') else args.image_dir
+    else:
+        json_path = args.train_json_path
+        image_dir = args.image_dir
+
+    # Create datasets for train/val/test
+    dataset = CustomJSONDataset(
+        json_path=json_path,
+        image_dir=image_dir,
         image_processor=image_processor,
         tokenizer=tokenizer,
         max_tokens=args.max_tokens
     )
     
     # Create dataloaders
-    train_loader = DataLoader(
-        train_dataset,
+    dataloader = DataLoader(
+        dataset,
         batch_size=args.batch_size,
         shuffle=True,
         num_workers=args.workers,
@@ -597,34 +607,34 @@ def get_llavamed_dataset(args, image_processor, tokenizer, epoch=0, floor=False)
     )
     
     # Add metadata for compatibility with existing code
-    train_loader.num_samples = len(train_dataset)
-    train_loader.num_batches = len(train_loader)
+    dataloader.num_samples = len(dataset)
+    dataloader.num_batches = len(dataloader)    
     
     # Create a placeholder shared epoch (to maintain interface consistency)
     shared_epoch = SharedEpoch(epoch=epoch)
     
     # Return DataInfo object as expected by the training code
-    return DataInfo(dataloader=train_loader, shared_epoch=shared_epoch)
+    return DataInfo(dataloader=dataloader, shared_epoch=shared_epoch)
 
 
-def get_dataset_fn(dataset_type):
+def get_dataset_fn(dataset_name):
     """
     Helper function to get the dataset function based on the dataset type
     """
-    if dataset_type == "image_text":
+    if dataset_name == "image_text":
         return get_laion_dataset
-    elif dataset_type == "mmc4":
+    elif dataset_name == "mmc4":
         return get_mmc4_dataset
-    elif dataset_type == "llavamed":  # Add our dataset type
+    elif dataset_name == "llavamed":  # Add our dataset type
         return get_llavamed_dataset
     else:
-        raise ValueError(f"Unsupported dataset type: {dataset_type}")
+        raise ValueError(f"Unsupported dataset type: {dataset_name}")
 
 
-def get_data(args, image_processor, tokenizer, dataset_type, epoch=0):
+def get_data(args, image_processor, tokenizer, dataset_name, epoch=0, type="train"):
     """
     Interface for getting the webdatasets
     """
-    return get_dataset_fn(dataset_type)(
-        args, image_processor=image_processor, epoch=epoch, tokenizer=tokenizer
+    return get_dataset_fn(dataset_name)(
+        args, image_processor=image_processor, epoch=epoch, tokenizer=tokenizer, type=type
     )
