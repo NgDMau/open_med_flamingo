@@ -31,7 +31,9 @@ export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128
 
 # Check GPU availability before starting
 echo "Checking GPU availability..."
-nvidia-smi
+# nvidia-smi
+
+# train_num_samples is at max 10783
 
 # Reduce number of processes initially to test
 torchrun --nnodes=1 --nproc_per_node=1 train/train.py \
@@ -40,14 +42,14 @@ torchrun --nnodes=1 --nproc_per_node=1 train/train.py \
     --cross_attn_every_n_layers 1 \
     --dataset_type llavamed \
     --batch_size 2 \
-    --max_tokens 512 \
+    --max_tokens 256 \
     --workers 1 \
     --run_name MedFlamingo-MRI-CoT-Finetune \
     --resume_from_checkpoint "/home/mau_nguyen_dinh_caddi_jp/.cache/huggingface/hub/models--openflamingo--OpenFlamingo-3B-vitl-mpt1b/snapshots/ed3a0c3190b2fc2d1c39630738896d4e73ce1bbc/checkpoint.pt" \
-    --train_num_samples 10783 \ 
+    --train_num_samples 2 \
     --train_json_path "/home/mau_nguyen_dinh_caddi_jp/projects/dataset/vlm-project-with-images-with-bbox-images-v4/llava_med_mri_bbox_train_CoT_new.json" \
     --image_dir "/home/mau_nguyen_dinh_caddi_jp/projects/dataset/vlm-project-with-images-with-bbox-images-v4/images/train" \
-    --num_epochs 10 \
+    --num_epochs 1 \
     --gradient_checkpointing \
     --learning_rate 5e-6 \
     --warmup_steps 100 \
