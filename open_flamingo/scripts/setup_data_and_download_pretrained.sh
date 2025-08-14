@@ -1,0 +1,2 @@
+python download_and_extract_images.py
+python download_pretrained_model.py

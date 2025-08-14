@@ -4,7 +4,7 @@ from tqdm import tqdm
 
 # --- Configuration ---
 DATASET_ID = "tungvu3196/vlm-project-with-images-with-bbox-images-v4"
-OUTPUT_DIR = "images"
+OUTPUT_DIR = "../../data/images"
 
 # --- Main Script ---
 print(f"Loading dataset '{DATASET_ID}'...")
