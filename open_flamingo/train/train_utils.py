@@ -99,7 +99,7 @@ def train_one_epoch(
 
         labels[labels == tokenizer.pad_token_id] = -100
         labels[labels == media_token_id] = -100
-        
+
         labels = labels.to(device_id)
 
         with autocast():
@@ -161,56 +161,6 @@ def train_one_epoch(
             step_time_m.update(time.time() - end)
             end = time.time()
 
-            # rank 0 logging
-            # if args.rank == 0 and args.report_to_wandb:
-            #     laion_samples_per_second = (
-            #         args.gradient_accumulation_steps
-            #         * args.batch_size_laion
-            #         * args.world_size
-            #         / step_time_m.val
-            #     )
-            #     laion_samples_per_second_per_gpu = (
-            #         args.gradient_accumulation_steps
-            #         * args.batch_size_laion
-            #         / step_time_m.val
-            #     )
-            #     c4_samples_per_second = (
-            #         args.gradient_accumulation_steps
-            #         * args.batch_size_mmc4
-            #         * args.world_size
-            #         / step_time_m.val
-            #     )
-            #     c4_samples_per_second_per_gpu = (
-            #         args.gradient_accumulation_steps
-            #         * args.batch_size_mmc4
-            #         / step_time_m.val
-            #     )
-            #     wandb.log(
-            #         {
-            #             "data_time": data_time_m.avg,
-            #             "step_time": step_time_m.avg,
-            #             "laion_samples_per_second": laion_samples_per_second,
-            #             "laion_samples_per_second_per_gpu": laion_samples_per_second_per_gpu,
-            #             "c4_samples_per_second": c4_samples_per_second,
-            #             "c4_samples_per_second_per_gpu": c4_samples_per_second_per_gpu,
-            #             "lr": optimizer.param_groups[0]["lr"],
-            #         },
-            #         commit=False,
-            #     )
-            #     step_time_m.reset()
-            #     data_time_m.reset()
-
-            #     wandb.log(
-            #         {
-            #             "loss": loss.item(),
-            #             "global_step": global_step,
-            #         },
-            #         commit=True,
-            #     )
-                # wandb.log(
-                #     {"loss_mmc4": loss_mmc4.item(), "global_step": global_step},
-                #     commit=True,
-                # )
 
         # Log loss to console
         if ((num_steps + 1) % args.logging_steps == 0) and args.rank == 0:
