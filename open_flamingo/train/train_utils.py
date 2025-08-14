@@ -87,13 +87,19 @@ def train_one_epoch(
 
         images = batch[0].to(device_id, dtype=cast_dtype, non_blocking=True)
         # The below line is commented out as I got error: Wrong shape: expected 4 dims. Received 6-dim tensor.  Input tensor shape: torch.Size([16, 1, 1, 3, 224, 224]). Additional info: {'t': 1, 'f': 1}.
-        # images = rearrange(images, "(b t f) c h w -> b t f c h w", t=1, f=1)  
-        input_ids = batch[1][0].to(device_id, dtype=cast_dtype, non_blocking=True)
-        attention_mask = batch[1][1].to(device_id, dtype=cast_dtype, non_blocking=True)
+        # images = rearrange(images, "(b t f) c h w -> b t f c h w", t=1, f=1) 
+        input_ids, attention_mask, target_mask = batch[1] 
+        
+        input_ids = input_ids.to(device_id, non_blocking=True)
+        attention_mask = attention_mask.to(device_id, non_blocking=True)
+        target_mask = target_mask.to(device_id, non_blocking=True)
 
         labels = input_ids.clone()
+        labels[~target_mask] = -100 # Use the pre-computed mask to ignore prompt tokens
+
         labels[labels == tokenizer.pad_token_id] = -100
         labels[labels == media_token_id] = -100
+        
         labels = labels.to(device_id)
 
         with autocast():

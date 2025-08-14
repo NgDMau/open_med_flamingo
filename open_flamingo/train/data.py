@@ -515,15 +515,30 @@ class CustomJSONDataset(Dataset):
         human_prompt = next(msg['value'] for msg in conversation if msg['from'] == 'human')
         
         # Get GPT response
-        gpt_response = next(msg['value'] for msg in conversation if msg['from'] == 'gpt')
+        gpt_response_full = next(msg['value'] for msg in conversation if msg['from'] == 'gpt')
         
-        # Format as required by the model
-        # Keep <image> token in the human prompt
-        formatted_text = f"{human_prompt}{gpt_response}<|endofchunk|>{self.tokenizer.eos_token}"
-        
+        try:
+            gpt_prompt_part, gpt_answer_part = gpt_response_full.rsplit("Final Answer:", 1)
+            gpt_prompt_part += "Final Answer:" # Add the separator back to the prompt
+            gpt_answer_part = gpt_answer_part.strip() # Clean up the answer
+        except ValueError:
+            # Handle cases where the split string is not found, if any
+            gpt_prompt_part = gpt_response_full
+            gpt_answer_part = ""
+
+        # Combine all prompt parts
+        prompt_text = f"{human_prompt}{gpt_prompt_part}"
+        prompt_text = prompt_text.replace("<image>", "")
+        prompt_text = "<image>" + prompt_text # Ensure <image> is at the start
+
+        prompt_tokens = self.tokenizer(prompt_text, add_special_tokens=False)
+        prompt_len = len(prompt_tokens["input_ids"])
+
+        full_text = f"{prompt_text}{gpt_answer_part}<|endofchunk|>{self.tokenizer.eos_token}"
+
         # Tokenize
         encoding = self.tokenizer(
-            formatted_text,
+            full_text,
             max_length=self.max_tokens,
             padding="max_length",
             truncation=True,
@@ -532,14 +547,20 @@ class CustomJSONDataset(Dataset):
         
         input_ids = encoding["input_ids"].squeeze(0)
         attention_mask = encoding["attention_mask"].squeeze(0)
-        
-        return image_tensor, (input_ids, attention_mask)
-    
+
+        # Create the target_mask for calculating loss only on the answer
+        target_mask = torch.zeros_like(input_ids, dtype=torch.bool)
+        # We set the mask to 1 for all tokens belonging to the answer
+        # The prompt length is the start of the answer
+        target_mask[prompt_len:] = 1
+
+        return image_tensor, (input_ids, attention_mask, target_mask)
+
     @staticmethod
     def collate_fn(batch):
         """Custom collate function to handle the batch creation"""
         images, text_data = zip(*batch)
-        input_ids, attention_mask = zip(*text_data)
+        input_ids, attention_mask, target_mask = zip(*text_data)
         
         # Stack images - needs reshaping for Flamingo format (b t f c h w)
         images = torch.stack(images)  # Shape: (b, c, h, w)
@@ -548,9 +569,10 @@ class CustomJSONDataset(Dataset):
         # Stack text data
         input_ids = torch.stack(input_ids)
         attention_mask = torch.stack(attention_mask)
-        
-        return images, (input_ids, attention_mask)
-    
+        target_mask = torch.stack(target_mask)
+
+        return images, (input_ids, attention_mask, target_mask)
+
 
 def get_llavamed_dataset(args, image_processor, tokenizer, epoch=0, floor=False):
     """
