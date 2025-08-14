@@ -54,6 +54,31 @@ There are three `requirements.txt` files:
 
 Depending on your use case, you can install any of these with `pip install -r <requirements-file.txt>`. The base file contains only the dependencies needed for running the model.
 
+Extra installation:  
+1. Miniconda:
+```bash
+mkdir -p ~/miniconda3
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda3/miniconda.sh
+bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
+rm ~/miniconda3/miniconda.sh
+```
+
+Refresh terminal:
+```bash
+source ~/miniconda3/bin/activate
+```
+
+Initialize conda on all available shees:
+```bash
+conda init --all
+```
+
+2. Compatible torch and transformers
+```bash
+pip install torch==2.3.0 torchvision==0.18.0 torchaudio==2.3.0 --index-url https://download.pytorch.org/whl/cu121
+pip install transformers==4.49
+```
+
 ## Development
 
 We use pre-commit hooks to align formatting with the checks in the repository. 

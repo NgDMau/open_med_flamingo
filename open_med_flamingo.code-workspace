@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../dataset"
+		},
+		{
+			"path": "../instruct-flamingo"
+		}
+	],
+	"settings": {}
+}

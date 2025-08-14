@@ -1,0 +1,58 @@
+=== OpenFlamingo Generation Results ===
+Timestamp: 2025-08-13 13:36:36
+Model: OpenFlamingo-3B-vitl-mpt1b
+Device: cuda
+
+=== Input Prompt ===
+<image>What's the potency of this disease?
+
++ Reasoning:
+- Step 1: Determine the affected region
+- Answer: ```json
+[{"bbox_2d": [134, 10, 245, 66], "label": "disease area"}, {"bbox_2d": [91, 132, 200, 180], "label": "disease area"}, {"bbox_2d": [157, 170, 264, 217], "label": "disease area"}]
+```
+- Step 2: How would you identify the visual hallmarks of this lesion?
+- Answer: Moderate atrophy volume loss of gyri. Substantial widening of parietal sulci. Central atrophy, enlarged lateral ventricular body width.
+- Step 3: How would you characterize the grade of this lesion?
+- Answer: GCA = 2
+
++ Final Answer:
+
+=== Generation Parameters ===
+max_new_tokens: 16
+num_beams: 3
+no_repeat_ngram_size: 3
+temperature: 1.0
+do_sample: False
+top_k: 50
+top_p: 1.0
+
+=== Generated Text ===
+<image>What's the potency of this disease?
+
++ Reasoning:
+- Step 1: Determine the affected region
+- Answer: ```json
+[{"bbox_2d": [134, 10, 245, 66], "label": "disease area"}, {"bbox_2d": [91, 132, 200, 180], "label": "disease area"}, {"bbox_2d": [157, 170, 264, 217], "label": "disease area"}]
+```
+- Step 2: How would you identify the visual hallmarks of this lesion?
+- Answer: Moderate atrophy volume loss of gyri. Substantial widening of parietal sulci. Central atrophy, enlarged lateral ventricular body width.
+- Step 3: How would you characterize the grade of this lesion?
+- Answer: GCA = 2
+
++ Final Answer: This is a GCA with moderate atrophy and moderate widening of the ventricular body.
+
+=== Full Output (with special tokens) ===
+<image>What's the potency of this disease?
+
++ Reasoning:
+- Step 1: Determine the affected region
+- Answer: ```json
+[{"bbox_2d": [134, 10, 245, 66], "label": "disease area"}, {"bbox_2d": [91, 132, 200, 180], "label": "disease area"}, {"bbox_2d": [157, 170, 264, 217], "label": "disease area"}]
+```
+- Step 2: How would you identify the visual hallmarks of this lesion?
+- Answer: Moderate atrophy volume loss of gyri. Substantial widening of parietal sulci. Central atrophy, enlarged lateral ventricular body width.
+- Step 3: How would you characterize the grade of this lesion?
+- Answer: GCA = 2
+
++ Final Answer: This is a GCA with moderate atrophy and moderate widening of the ventricular body.
