@@ -526,8 +526,13 @@ class CustomJSONDataset(Dataset):
             gpt_prompt_part = gpt_response_full
             gpt_answer_part = ""
 
+
         # Combine all prompt parts
         prompt_text = f"{human_prompt}{gpt_prompt_part}"
+
+        prompt_text = human_prompt
+        gpt_answer_part = gpt_response_full
+
         prompt_text = prompt_text.replace("<image>", "")
         prompt_text = "<image>" + prompt_text # Ensure <image> is at the start
 

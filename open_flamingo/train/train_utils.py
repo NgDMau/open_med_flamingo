@@ -11,7 +11,7 @@ from torch.distributed.fsdp.api import FullOptimStateDictConfig
 import os
 import wandb
 from einops import rearrange
-
+import copy
 
 def get_cast_dtype(precision: str):
     cast_dtype = None
@@ -103,13 +103,15 @@ def train_one_epoch(
         labels = labels.to(device_id)
 
         with autocast():
-            loss = model(
+            output = model(
                 vision_x=images,
                 lang_x=input_ids,
                 attention_mask=attention_mask,
                 labels=labels,
-            )[0]
+            )
 
+            loss, logits = output[:2]
+        
         divided_loss = loss / args.gradient_accumulation_steps
         (divided_loss).backward()
 
@@ -164,9 +166,37 @@ def train_one_epoch(
 
         # Log loss to console
         if ((num_steps + 1) % args.logging_steps == 0) and args.rank == 0:
+
+            input_tokens = tokenizer.convert_ids_to_tokens(input_ids[0].squeeze().tolist())
+            input_text = tokenizer.convert_tokens_to_string(input_tokens)
+            print('\nINPUT TEXT')
+            # print(input_ids[0])
+            print(input_text)
+            print('-'*128)
+            
+            labels_ = copy.deepcopy(labels)
+            labels_[labels == -100] = 1
+            mask_token = tokenizer.convert_tokens_to_string(tokenizer.convert_ids_to_tokens([1]))
+            label_tokens = tokenizer.convert_ids_to_tokens(labels_[0].squeeze().tolist())
+            label_text = tokenizer.convert_tokens_to_string(label_tokens).replace(mask_token, ' ')
+            print('LABELS TEXT')
+            # print(labels[0])
+            print(label_text)
+            print('-'*128)
+
+            probs = torch.softmax(logits, dim=-1)
+            predicted_token_indexes = torch.argmax(probs, dim=-1)
+            predicted_token_indexes[labels == -100] = 1
+            predicted_tokens = tokenizer.convert_ids_to_tokens(predicted_token_indexes[0].squeeze().tolist())
+            predicted_text = tokenizer.convert_tokens_to_string(predicted_tokens).replace(mask_token, ' ')
+            print('PREDICTED TEXT')
+            # print(predicted_token_indexes[0])
+            print(predicted_text)
+            print('-'*128)
             print(
                 f"Step {num_steps+1}/{num_batches_per_epoch} of epoch {epoch+1}/{args.num_epochs} complete. Loss MedFlamingo: {loss.item():.3f}"
             )
+
 
 
 class AverageMeter(object):

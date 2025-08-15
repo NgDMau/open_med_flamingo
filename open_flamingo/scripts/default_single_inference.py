@@ -18,86 +18,71 @@ model, image_processor, tokenizer = create_model_and_transforms(
     cross_attn_every_n_layers=1
 )
 
-checkpoint_path = hf_hub_download("openflamingo/OpenFlamingo-3B-vitl-mpt1b", "checkpoint.pt")
+# checkpoint_path = hf_hub_download("openflamingo/OpenFlamingo-3B-vitl-mpt1b", "checkpoint.pt")
+checkpoint_path = "/home/mau_nguyen_dinh_caddi_jp/projects/open_med_flamingo/open_flamingo/MedFlamingo-MRI-CoT-Finetune/checkpoint_1.pt"
 model.load_state_dict(torch.load(checkpoint_path, map_location=device), strict=False)
 
 # Move model to device
 model = model.to(device)
 model.eval()  # Set to evaluation mode
 
-"""
-Step 1: Load images
-"""
-demo_image_one = Image.open(
-    requests.get(
-        "http://images.cocodataset.org/val2017/000000039769.jpg", stream=True
-    ).raw
-)
 
-demo_image_two = Image.open(
-    requests.get(
-        "http://images.cocodataset.org/test-stuff2017/000000028137.jpg",
-        stream=True
-    ).raw
-)
+query_image = Image.open("/home/mau_nguyen_dinh_caddi_jp/projects/dataset/vlm-project-with-images-with-bbox-images-v4/images/test/238.jpg")  # Local image for testing
+query_prompt = """<image>What's the potency of this disease?
 
-query_image = Image.open(
-    requests.get(
-        "http://images.cocodataset.org/test-stuff2017/000000028352.jpg", 
-        stream=True
-    ).raw
-)
++ Reasoning:
+- Step 1: identify region of disease
+- Answer:```json
+[{"bbox_2d": [139, 214, 188, 251], "label": "disease area"}]
+```
+- Step 2: What are the visual signatures of this lesion?
+- Answer: No atrophy.
+- Step 3: What grade designation would you give to this lesion?
+- Answer: MTA = 0
 
++ Final Answer:"""
 
-# query_image = Image.open("/home/mau_nguyen_dinh_caddi_jp/projects/dataset/vlm-project-with-images-with-bbox-images-v4/images/test/238.jpg")  # Local image for testing
-# query_prompt = "<image>What's the potency of this disease?\n\n+ Reasoning:\n- Step 1: Determine the affected region\n- Answer: ```json\n[{\"bbox_2d\": [134, 10, 245, 66], \"label\": \"disease area\"}, {\"bbox_2d\": [91, 132, 200, 180], \"label\": \"disease area\"}, {\"bbox_2d\": [157, 170, 264, 217], \"label\": \"disease area\"}]\n```\n- Step 2: How would you identify the visual hallmarks of this lesion?\n- Answer: Moderate atrophy volume loss of gyri. Substantial widening of parietal sulci. Central atrophy, enlarged lateral ventricular body width.\n- Step 3: How would you characterize the grade of this lesion?\n- Answer: GCA = 2\n\n+ Final Answer:"
-query_prompt = "<image>What is it ?"
+# query_prompt = """<image>What's the potency of this disease?
 
+# Analysis:
+# - Step 1: Disease regions identified in temporal areas
+# - Step 2: No cortical atrophy visible
+# - Step 3: Severity grade MTA = 0
 
-"""
-Step 2: Preprocessing images
-Details: For OpenFlamingo, we expect the image to be a torch tensor of shape 
- batch_size x num_media x num_frames x channels x height x width. 
- In this case batch_size = 1, num_media = 3, num_frames = 1,
- channels = 3, height = 224, width = 224.
-"""
+# Final diagnosis:"""
+
 vision_x = [
-    # image_processor(demo_image_one).unsqueeze(0), 
-    # image_processor(demo_image_two).unsqueeze(0), 
-    image_processor(query_image).unsqueeze(0)]
+    image_processor(query_image).unsqueeze(0)
+]
 vision_x = torch.cat(vision_x, dim=0)
 vision_x = vision_x.unsqueeze(1).unsqueeze(0).to(device)
 
-"""
-Step 3: Preprocessing text
-Details: In the text we expect an <image> special token to indicate where an image is.
- We also expect an <|endofchunk|> special token to indicate the end of the text 
- portion associated with an image.
-"""
+
 tokenizer.padding_side = "left" # For generation padding tokens should be on the left
+tokenizer.add_eos_token = False
+
 lang_x = tokenizer(
-    # ["<image>What is it? An image of two cats.<|endofchunk|><image>What is it? An image of a bathroom sink.<|endofchunk|><image>What is it?"],
     [query_prompt],    
     return_tensors="pt",
+    padding=True
 )
 
 # Move text tensors to device
 lang_x = {k: v.to(device) for k, v in lang_x.items()}
 
-
-"""
-Step 4: Generate text
-"""
 # Generation parameters
 generation_params = {
-    "max_new_tokens": 128,           # Default: None
-    "num_beams": 3,                 # Default: 1
-    "no_repeat_ngram_size": 3,      # Default: 0
-    "temperature": 1.0,             # Default: 1.0
-    "do_sample": False,             # Default: False
-    "top_k": 50,                    # Default: 50
-    "top_p": 1.0,                   # Default: 1.0
+    "max_new_tokens": 8,           # Increased from 64
+    "num_beams": 3,                  
+    "no_repeat_ngram_size": 2,       # KEY: Prevent repetition
+    "temperature": 0.8,              # Add randomness
+    "do_sample": True,               # Enable sampling  
+    "top_k": 50,
+    "top_p": 0.9,                    # Nucleus sampling
+    # "eos_token_id": 50277,
+    # "pad_token_id": tokenizer.pad_token_id,
 }
+
 
 generated_text = model.generate(
     vision_x=vision_x,
@@ -106,8 +91,16 @@ generated_text = model.generate(
     **generation_params
 )
 
-decoded_text = tokenizer.decode(generated_text[0])
+mask_token = tokenizer.convert_tokens_to_string(tokenizer.convert_ids_to_tokens([1]))
+predicted_tokens = tokenizer.convert_ids_to_tokens(generated_text[0].squeeze().tolist())
+predicted_text = tokenizer.convert_tokens_to_string(predicted_tokens).replace(mask_token, ' ')
+            
+decoded_text = tokenizer.decode(generated_text[0], skip_special_tokens=True)
+
+
+
 print("Generated text: ", decoded_text)
+print("predicted_text: ", predicted_text)
 
 # Save results to file
 output_folder = "../../inference_results"  # Change this to your desired folder path
@@ -137,4 +130,8 @@ with open(filepath, 'w', encoding='utf-8') as f:
     f.write("=== Full Output (with special tokens) ===\n")
     f.write(f"{tokenizer.decode(generated_text[0], skip_special_tokens=False)}\n")
 
+# Add this debug code to your inference script:
+print(f"EOS token: {tokenizer.eos_token} (ID: {tokenizer.eos_token_id})")
+print(f"End of chunk token ID: {tokenizer.encode('<|endofchunk|>', add_special_tokens=False)}")
+print(f"End of text token ID: {tokenizer.encode('<|endoftext|>', add_special_tokens=False)}")
 print(f"Results saved to: {filepath}")
