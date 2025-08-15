@@ -222,8 +222,11 @@ def main():
     parser.add_argument("--val_json_path", type=str, default=None, help="Path to validation JSON file (optional)")
     parser.add_argument("--image_dir", type=str, default=None, help="Directory containing images")
     parser.add_argument("--max_tokens", type=int, default=256, help="Maximum number of tokens for text")
-    parser.add_argument("--dataset_type", type=str, default="llavamed", help="Dataset type (llavamed, image_text, mmc4)")
+    parser.add_argument("--dataset_name", type=str, default="llavamed", help="Dataset name (llavamed, image_text, mmc4)")
     parser.add_argument("--train_num_samples", type=int, default=256, help="Maximum number of tokens for text")
+    parser.add_argument("--val_num_samples", type=int, default=256, help="Maximum number of tokens for text")
+    parser.add_argument("--val_batch_size", type=int, default=8, help="Maximum number of tokens for text")
+
 
     args = parser.parse_args()
 
@@ -493,17 +496,13 @@ def main():
         
     # for epoch in range(resume_from_epoch, args.num_epochs):
     for epoch in range(resume_from_epoch, overall_num_epochs):
-        # laion_dataset.set_epoch(epoch)
-        # laion_loader = laion_dataset.dataloader
-        # mmc4_dataset.set_epoch(epoch)
-        # mmc4_loader = mmc4_dataset.dataloader
         
         # In your training script
         llavamed_train_dataset = get_data(args, image_processor, tokenizer, args.dataset_name, epoch, type="train")
         llavamed_train_dataset.set_epoch(epoch)
         train_data_loader = llavamed_train_dataset.dataloader
 
-        llavamed_val_dataset = get_data(args, image_processor, tokenizer, args.dataset_name, epoch, type="train")
+        llavamed_val_dataset = get_data(args, image_processor, tokenizer, args.dataset_name, epoch, type="val")
         llavamed_val_dataset.set_epoch(epoch)
         val_data_loader = llavamed_val_dataset.dataloader
 
@@ -514,15 +513,13 @@ def main():
             tokenizer=tokenizer,
             optimizer=optimizer,
             lr_scheduler=lr_scheduler,
-            # laion_loader=laion_loader,
-            # mmc4_loader=mmc4_loader,
             data_loader=train_data_loader,
             device_id=device_id,
             wandb=wandb,
         )
 
         avg_val_loss = validate_one_epoch(
-            args, model, val_data_loader, tokenizer, device_id
+            args, ddp_model, val_data_loader, tokenizer, device_id
         )
 
         print(f"Epoch {epoch+1} Summary:")

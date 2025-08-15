@@ -65,6 +65,7 @@ def train_one_epoch(
 
     # setup model
     media_token_id = tokenizer("<image>", add_special_tokens=False)["input_ids"][-1]
+    print(f"Media token ID: {media_token_id}")
     endofchunk_token_id = tokenizer("<|endofchunk|>", add_special_tokens=False)[
         "input_ids"
     ][-1]
@@ -173,7 +174,7 @@ def train_one_epoch(
             )
 
         avg_train_loss = total_train_loss / num_batches_per_epoch
-        return avg_train_loss
+    return avg_train_loss
 
 def validate_one_epoch(args, model, data_loader, tokenizer, device_id):
     """

@@ -581,12 +581,18 @@ def get_llavamed_dataset(args, image_processor, tokenizer, epoch=0, floor=False,
     if type == "val":
         json_path = args.val_json_path if hasattr(args, 'val_json_path') else args.train_json_path
         image_dir = args.val_image_dir if hasattr(args, 'val_image_dir') else args.image_dir
+        batch_size = args.val_batch_size if hasattr(args, 'val_batch_size') else args.batch_size
+        print(f"Using validation dataset from {json_path} with batch size {batch_size}")
     elif type == "test":
         json_path = args.test_json_path if hasattr(args, 'test_json_path') else args.train_json_path
         image_dir = args.test_image_dir if hasattr(args, 'test_image_dir') else args.image_dir
+        batch_size = args.test_batch_size if hasattr(args, 'test_batch_size') else args.batch_size
+        print(f"Using test dataset from {json_path} with batch size {batch_size}")
     else:
         json_path = args.train_json_path
         image_dir = args.image_dir
+        batch_size = args.batch_size
+        print(f"Using training dataset from {json_path} with batch size {batch_size}")
 
     # Create datasets for train/val/test
     dataset = CustomJSONDataset(
@@ -600,7 +606,7 @@ def get_llavamed_dataset(args, image_processor, tokenizer, epoch=0, floor=False,
     # Create dataloaders
     dataloader = DataLoader(
         dataset,
-        batch_size=args.batch_size,
+        batch_size=batch_size,
         shuffle=True,
         num_workers=args.workers,
         collate_fn=CustomJSONDataset.collate_fn
