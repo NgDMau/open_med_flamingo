@@ -48,7 +48,7 @@ torchrun --nnodes=1 --nproc_per_node=1 train/train.py \
     --run_name MedFlamingo-MRI-CoT-Finetune \
     --resume_from_checkpoint "/home/mau_nguyen_dinh_caddi_jp/.cache/huggingface/hub/models--openflamingo--OpenFlamingo-3B-vitl-mpt1b/snapshots/ed3a0c3190b2fc2d1c39630738896d4e73ce1bbc/checkpoint.pt" \
     --train_num_samples 2 \
-    --train_json_path "/home/mau_nguyen_dinh_caddi_jp/projects/dataset/vlm-project-with-images-with-bbox-images-v4/llava_med_mri_bbox_train_CoT_new.json" \
+    --train_json_path "/home/mau_nguyen_dinh_caddi_jp/projects/dataset/vlm-project-with-images-with-bbox-images-v4/llava_med_mri_bbox_train_small_CoT_new.json" \
     --val_json_path "/home/mau_nguyen_dinh_caddi_jp/projects/dataset/vlm-project-with-images-with-bbox-images-v4/llava_med_mri_bbox_val_CoT_new.json" \
     --image_dir "/home/mau_nguyen_dinh_caddi_jp/projects/dataset/vlm-project-with-images-with-bbox-images-v4/images/train" \
     --num_epochs 3 \
