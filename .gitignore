@@ -149,3 +149,5 @@ open_flamingo/data/
 all_extracted_images/*
 open_flamingo/scripts/all_extracted_images/
 data/images/*
+inference_results/*
+*_log.txt
