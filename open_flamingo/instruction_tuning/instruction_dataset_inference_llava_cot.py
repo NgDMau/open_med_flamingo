@@ -114,7 +114,7 @@ def save_summary(results, args, logger):
         references, hypotheses = preprocess_text(references, hypotheses)
 
         logger.info(f"Calculating metrics for {dataset_name}...")
-        accuracy = calculate_accuracy(references, hypotheses)
+        accuracy = calculate_accuracy(references=references, hypotheses=hypotheses, loose=True)
 
         target_lengths = [len(target.split()) for target in references]
         prediction_lengths = [len(prediction.split()) for prediction in hypotheses]
@@ -172,7 +172,7 @@ def preprocess_text(references: List[str], hypotheses: List[str]) -> Tuple[List[
 
     return processed_references, processed_hypotheses
 
-def calculate_accuracy(references: List[str], hypotheses: List[str]) -> float:
+def calculate_accuracy(references: List[str], hypotheses: List[str], loose=False) -> float:
     """
     Calculates the accuracy (exact match) score between two lists of strings.
 
@@ -195,9 +195,36 @@ def calculate_accuracy(references: List[str], hypotheses: List[str]) -> float:
     for ref, hyp in zip(references, hypotheses):
         if ref == hyp:
             correct_predictions += 1
+        
+        elif loose:
+            # Check if there is pattern <Final Answer: Some-thing> inside hyp
+            # For example: "Final Answer: Mild-Dementia"
+
+            answer = extract_answer_regex(hyp)
+            if ref == answer:
+                correct_predictions += 1
 
     accuracy = correct_predictions / total_predictions
     return accuracy
+
+
+def extract_answer_regex(text: str) -> str:
+    """
+    Extracts a hyphenated word following 'Final Answer: ' using regex.
+
+    Args:
+        text: The input string to search.
+
+    Returns:
+        The extracted word (e.g., 'Mild-Dementia') or None if no match is found.
+    """
+    # This pattern looks for "Final Answer:", followed by optional whitespace,
+    # and then captures a sequence of word characters and hyphens.
+    match = re.search(r"Final Answer:\s*([\w-]+)", text)
+    
+    if match:
+        return match.group(1) # Return the first captured group
+    return ""
 
 
 def main():

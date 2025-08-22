@@ -15,7 +15,7 @@ CUDA_VISIBLE_DEVICES='1' python open_flamingo/instruction_tuning/instruction_dat
     --tuning_config '/app/baseline_models/instruct_flamingo/open_flamingo/instruction_tuning/tuning_config/lora[lm+xqttn]+perceiver.json' \
     --checkpoint_paths '/app/baseline_models/instruct_flamingo/runs/0821-clever_flamingo_v2_3b-2k_context-40G-resume-from-mpt7b-checkpoint-03/checkpoint_15.pt'  \
     --cross_attn_every_n_layers 4 \
-    --instruction_path '/app/baseline_models/sample_data/llama_mri_cot/instruct_flamingo/val_dataset_config.json' \
+    --instruction_path '/app/baseline_models/sample_data/llama_mri_cot/instruct_flamingo/eval_dataset_config.json' \
     --instruction_prompt_templete 'guanaco-no-prompt' \
     --num_samples -1 \
     --max_new_token 512 \
