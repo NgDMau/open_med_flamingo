@@ -10,6 +10,7 @@ from PIL import PngImagePlugin
 LARGE_ENOUGH_NUMBER = 100
 PngImagePlugin.MAX_TEXT_CHUNK = LARGE_ENOUGH_NUMBER * (1024**2)
 
+
 def save_base64_image(base64_str, save_path):
     # 将Base64字符串解码为字节数据
     image_data = base64.b64decode(base64_str)
@@ -37,13 +38,14 @@ def save_base64_image(base64_str, save_path):
     # 保存图像到指定路径
     image.save(save_path)
 
-image_file = '/cpfs/shared/research-llm/instruc_data_en/multimodal_instruct_tuning/MIMIC-IT/TVC.json'
-image_dir = '/cpfs/shared/research-llm/instruc_data_en/multimodal_instruct_tuning/MIMIC-IT/images/TVC'
+
+image_file = "/cpfs/shared/research-llm/instruc_data_en/multimodal_instruct_tuning/MIMIC-IT/TVC.json"
+image_dir = "/cpfs/shared/research-llm/instruc_data_en/multimodal_instruct_tuning/MIMIC-IT/images/TVC"
 
 print(image_file)
 os.makedirs(image_dir, exist_ok=True)
 
-images = json.load(open(image_file, 'r'))
+images = json.load(open(image_file, "r"))
 
 for image_id, base64_str in tqdm.tqdm(images.items()):
-    save_base64_image(images[image_id], os.path.join(image_dir, image_id+'.png'))
+    save_base64_image(images[image_id], os.path.join(image_dir, image_id + ".png"))

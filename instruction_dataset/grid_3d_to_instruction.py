@@ -3,19 +3,16 @@ import random
 from pathlib import Path
 from torch.utils.data import Dataset
 
+
 class QDRL3D(Dataset):
-    def __init__(
-        self,
-        data_path,
-        split_file
-    ):
+    def __init__(self, data_path, split_file):
         self.img_idx2path = {
             int(p.stem): p.as_posix()
             for p in sorted(Path(data_path).glob("**/*.png"), key=lambda p: int(p.stem))
         }
-        with open(data_path+"/questions.json", "r") as f:
+        with open(data_path + "/questions.json", "r") as f:
             self.all_samples = json.load(f)
-        with open(data_path+"/"+split_file, "r") as f:
+        with open(data_path + "/" + split_file, "r") as f:
             self.split_idxs = json.load(f)
         self.samples = [self.all_samples[i] for i in self.split_idxs]
 
@@ -30,8 +27,10 @@ class QDRL3D(Dataset):
     def __len__(self):
         return len(self.samples)
 
+
 def join_words(words_list):
-    return ' '.join(words_list)
+    return " ".join(words_list)
+
 
 def create_instruction(question, direct_answer_instructions):
     question_prompts = [
@@ -59,12 +58,17 @@ def create_instruction(question, direct_answer_instructions):
     if random.random() > 0.5:
         question_prompt = random.choice(question_prompts)
     else:
-        question_prompt = ''
+        question_prompt = ""
     if random.random() > 0.5:
-        instruction = question_prompt + question + ' ' + random.choice(direct_answer_instructions)
+        instruction = (
+            question_prompt + question + " " + random.choice(direct_answer_instructions)
+        )
     else:
-        instruction = question_prompt + random.choice(direct_answer_instructions) + ' ' + question
+        instruction = (
+            question_prompt + random.choice(direct_answer_instructions) + " " + question
+        )
     return instruction
+
 
 def create_answer_template(answer):
     true_templates = [
@@ -83,9 +87,9 @@ def create_answer_template(answer):
         "My apologies, but that's not right.",
     ]
 
-    if answer == 'True':
+    if answer == "True":
         return random.choice(true_templates)
-    elif answer == 'False':
+    elif answer == "False":
         return random.choice(false_templates)
     else:
         answer_templates = [
@@ -107,10 +111,16 @@ def create_json_dataset(dataset, output_file):
         question = join_words(question_list).replace(" ?", "?")
         instruction = create_instruction(question, direct_answer_instructions)
         formatted_answer = create_answer_template(answer)
-        json_data.append({"input": "<img_path>" + img + "<img_path>" + instruction, "output": formatted_answer})
-    
+        json_data.append(
+            {
+                "input": "<img_path>" + img + "<img_path>" + instruction,
+                "output": formatted_answer,
+            }
+        )
+
     with open(output_file, "w") as f:
         json.dump(json_data, f, indent=4)
+
 
 direct_answer_instructions = [
     "Provide a concise answer to this question without any explanation or analysis.",
@@ -135,11 +145,19 @@ direct_answer_instructions = [
     "(State a clear-cut answer, excluding any additional information).",
 ]
 
-train_dataset = QDRL3D('/cpfs/user/chendelong/instruction_tuning_dataset/grid-3d/grid-3d', 'train_idxs.json')
-val_dataset = QDRL3D('/cpfs/user/chendelong/instruction_tuning_dataset/grid-3d/grid-3d', 'val_idxs.json')
-test_dataset = QDRL3D('/cpfs/user/chendelong/instruction_tuning_dataset/grid-3d/grid-3d', 'test_idxs.json')
+train_dataset = QDRL3D(
+    "/cpfs/user/chendelong/instruction_tuning_dataset/grid-3d/grid-3d",
+    "train_idxs.json",
+)
+val_dataset = QDRL3D(
+    "/cpfs/user/chendelong/instruction_tuning_dataset/grid-3d/grid-3d", "val_idxs.json"
+)
+test_dataset = QDRL3D(
+    "/cpfs/user/chendelong/instruction_tuning_dataset/grid-3d/grid-3d", "test_idxs.json"
+)
 import os
-os.makedirs('converted_datasets/grid3d', exist_ok=True)
-create_json_dataset(train_dataset, 'converted_datasets/grid3d/grid-3d-train.json')
-create_json_dataset(val_dataset, 'converted_datasets/grid3d/grid-3d-val.json')
-create_json_dataset(test_dataset, 'converted_datasets/grid3d/grid-3d-test.json')
+
+os.makedirs("converted_datasets/grid3d", exist_ok=True)
+create_json_dataset(train_dataset, "converted_datasets/grid3d/grid-3d-train.json")
+create_json_dataset(val_dataset, "converted_datasets/grid3d/grid-3d-val.json")
+create_json_dataset(test_dataset, "converted_datasets/grid3d/grid-3d-test.json")

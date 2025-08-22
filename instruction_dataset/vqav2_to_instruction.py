@@ -32,12 +32,12 @@ direct_answer_instructions = [
 class VQADataset(Dataset):
     def __init__(
         self,
-        split='val',
+        split="val",
         vqa_dataset="vqa",
     ):
-        image_dir_path=f"/cpfs/user/chendelong/downloads/mscoco_2014/{split}2014"
-        question_path=f"/cpfs/user/chendelong/downloads/vqav2/v2_OpenEnded_mscoco_{split}2014_questions.json"
-        annotations_path=f"/cpfs/user/chendelong/downloads/vqav2/v2_mscoco_{split}2014_annotations.json"
+        image_dir_path = f"/cpfs/user/chendelong/downloads/mscoco_2014/{split}2014"
+        question_path = f"/cpfs/user/chendelong/downloads/vqav2/v2_OpenEnded_mscoco_{split}2014_questions.json"
+        annotations_path = f"/cpfs/user/chendelong/downloads/vqav2/v2_mscoco_{split}2014_annotations.json"
         self.questions = json.load(open(question_path, "r"))["questions"]
         self.answers = json.load(open(annotations_path, "r"))["annotations"]
         self.image_dir_path = image_dir_path
@@ -50,11 +50,13 @@ class VQADataset(Dataset):
     def get_img_path(self, question):
         if self.vqa_dataset == "vqa":
             return os.path.join(
-                self.image_dir_path, f"COCO_{self.split}2014_{question['image_id']:012d}.jpg"
+                self.image_dir_path,
+                f"COCO_{self.split}2014_{question['image_id']:012d}.jpg",
             )
         elif self.vqa_dataset == "ok_vqa":
             return os.path.join(
-                self.image_dir_path, f"COCO_{self.split}2014_{question['image_id']:012d}.jpg"
+                self.image_dir_path,
+                f"COCO_{self.split}2014_{question['image_id']:012d}.jpg",
             )
         else:
             raise Exception(f"Unknown VQA dataset {self.vqa_dataset}")
@@ -69,47 +71,50 @@ class VQADataset(Dataset):
             "question": question["question"],
             "answers": [a["answer"] for a in answers["answers"]],
             "question_id": question["question_id"],
-            "img_path": img_path,  
+            "img_path": img_path,
         }
 
-    
     def to_alpaca_format(self):
         alpaca_data = []
         for idx in tqdm.tqdm(range(len(self.questions))):
             entry = self.__getitem__(idx)
             image_path_tag = f"<img_path>{entry['img_path']}<img_path>"
             if random.random() > 0.5:
-                instruction = entry["question"] + ' ' + random.choice(direct_answer_instructions)
+                instruction = (
+                    entry["question"] + " " + random.choice(direct_answer_instructions)
+                )
             else:
-                instruction = random.choice(direct_answer_instructions) + ' ' + entry["question"]
+                instruction = (
+                    random.choice(direct_answer_instructions) + " " + entry["question"]
+                )
             # instruction = entry["question"]
-            alpaca_data.append({
-                "input": image_path_tag + instruction,
-                "output": entry["answers"][0].capitalize()+'.'
-            })
+            alpaca_data.append(
+                {
+                    "input": image_path_tag + instruction,
+                    "output": entry["answers"][0].capitalize() + ".",
+                }
+            )
         return alpaca_data
 
 
-
-if __name__=='__main__':
-    dataset = VQADataset(split='train')
-    os.makedirs('converted_datasets/vqav2', exist_ok=True)
+if __name__ == "__main__":
+    dataset = VQADataset(split="train")
+    os.makedirs("converted_datasets/vqav2", exist_ok=True)
     print(f"Total number of samples: {len(dataset)}")
     alpaca_format_data = dataset.to_alpaca_format()
     num_samples = len(alpaca_format_data)
     filename = f"converted_datasets/vqav2/train_{num_samples // 1000}k.json"
 
-    with open(filename, 'w') as outfile:
+    with open(filename, "w") as outfile:
         json.dump(alpaca_format_data, outfile)
     print(f"Data has been saved to {filename}")
 
-    
-    dataset = VQADataset(split='val')
+    dataset = VQADataset(split="val")
     print(f"Total number of samples: {len(dataset)}")
     alpaca_format_data = dataset.to_alpaca_format()
     num_samples = len(alpaca_format_data)
     filename = f"converted_datasets/vqav2/val_{num_samples // 1000}k.json"
 
-    with open(filename, 'w') as outfile:
+    with open(filename, "w") as outfile:
         json.dump(alpaca_format_data, outfile)
     print(f"Data has been saved to {filename}")

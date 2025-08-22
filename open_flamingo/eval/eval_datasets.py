@@ -58,9 +58,11 @@ class CaptionDataset(Dataset):
         return {
             "image": image,
             "caption": caption,
-            "image_id": self.annotations[idx]["cocoid"]
-            if self.dataset_name == "coco"
-            else self.annotations[idx]["filename"].split(".")[0],
+            "image_id": (
+                self.annotations[idx]["cocoid"]
+                if self.dataset_name == "coco"
+                else self.annotations[idx]["filename"].split(".")[0]
+            ),
         }
 
 
@@ -87,9 +89,11 @@ class VQADataset(Dataset):
         if self.dataset_name in {"vqav2", "ok_vqa"}:
             return os.path.join(
                 self.image_dir_path,
-                f"COCO_{self.img_coco_split}_{question['image_id']:012d}.jpg"
-                if self.is_train
-                else f"COCO_{self.img_coco_split}_{question['image_id']:012d}.jpg",
+                (
+                    f"COCO_{self.img_coco_split}_{question['image_id']:012d}.jpg"
+                    if self.is_train
+                    else f"COCO_{self.img_coco_split}_{question['image_id']:012d}.jpg"
+                ),
             )
         elif self.dataset_name == "vizwiz":
             return os.path.join(self.image_dir_path, question["image_id"])

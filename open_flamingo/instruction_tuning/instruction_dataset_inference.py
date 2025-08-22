@@ -17,7 +17,7 @@ from inferencer import Inferencer
 
 parser = argparse.ArgumentParser()
 
-# Build Inferencer - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+# Build Inferencer - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 parser.add_argument("--lm_path", type=str, default="facebook/opt-1.3b")
 parser.add_argument("--vision_encoder_path", default="ViT-L-14", type=str)
 parser.add_argument("--vision_encoder_pretrained", default="openai", type=str)
@@ -31,7 +31,7 @@ parser.add_argument(
 )
 parser.add_argument("--v1", action="store_true", default=False)
 
-# Language Generation Configs - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+# Language Generation Configs - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 parser.add_argument("--max_new_token", type=int, default=128)
 parser.add_argument("--num_beams", type=int, default=1)
 parser.add_argument("--temperature", type=float, default=1)
@@ -42,7 +42,7 @@ parser.add_argument("--no_repeat_ngram_size", type=int, default=3)
 parser.add_argument("--length_penalty", type=float, default=1)
 parser.add_argument("--max_length", type=int, default=1024)
 
-# Dataset Configs - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+# Dataset Configs - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 parser.add_argument(
     "--results_dir", type=str, default=None, help="JSON file to save results"
 )
@@ -58,8 +58,8 @@ parser.add_argument(
     help="Path to the instruction dataset images.",
     default=None,
 )
-parser.add_argument("--instruction_prompt_templete", type=str, default='guanaco')
-parser.add_argument("--dataset_sampling_mode", type=str, default='ratio')
+parser.add_argument("--instruction_prompt_templete", type=str, default="guanaco")
+parser.add_argument("--dataset_sampling_mode", type=str, default="ratio")
 parser.add_argument("--num_samples", type=int, default=1)
 parser.add_argument("--seed", type=int, default=42)
 
@@ -67,37 +67,49 @@ parser.add_argument("--seed", type=int, default=42)
 def calculate_metrics(references, hypotheses, logger):
     logger.info("Calculating ROUGE-L score...")
     rouge = rouge_scorer.RougeScorer(["rougeL"], use_stemmer=True)
-    rouge_scores = [rouge.score(ref, hyp)["rougeL"].fmeasure for ref, hyp in zip(references, hypotheses)]
+    rouge_scores = [
+        rouge.score(ref, hyp)["rougeL"].fmeasure
+        for ref, hyp in zip(references, hypotheses)
+    ]
     rouge_l_score = sum(rouge_scores) / len(rouge_scores)
 
     return rouge_l_score
-    
+
 
 def add_image_dir(str, img_dir):
-    if img_dir == '':
+    if img_dir == "":
         return str
     else:
         img_path_count = 0
         index = 0
         while index < len(str):
-            if str.startswith('<img_path>', index):
+            if str.startswith("<img_path>", index):
                 img_path_count += 1
                 if img_path_count % 2 == 1:  # Check if it's an odd-numbered <img_path>
-                    str = str[:index] + '<img_path>' + img_dir + '/' + str[index + len('<img_path>'):]
+                    str = (
+                        str[:index]
+                        + "<img_path>"
+                        + img_dir
+                        + "/"
+                        + str[index + len("<img_path>") :]
+                    )
             index += 1
         return str
-    
+
+
 def save_results(results, args, logger):
     if not os.path.exists(args.results_dir):
         logger.info(f"Creating results directory at {args.results_dir}")
         os.makedirs(args.results_dir)
     all_results = []
     for dataset_name, dataset_results in results.items():
-        logger.info(f"Saving results for {dataset_name} to file {args.results_dir}/{dataset_name}.json")
+        logger.info(
+            f"Saving results for {dataset_name} to file {args.results_dir}/{dataset_name}.json"
+        )
         all_results.extend(dataset_results)
         with open(os.path.join(args.results_dir, f"{dataset_name}.json"), "w") as f:
             json.dump(dataset_results, f, indent=4)
-    # with open(os.path.join(args.results_dir, f"all_results.json"), "w") as f:  
+    # with open(os.path.join(args.results_dir, f"all_results.json"), "w") as f:
     #     json.dump(all_results, f, indent=4)
 
 
@@ -115,7 +127,9 @@ def save_summary(results, args, logger):
         target_lengths = [len(target.split()) for target in references]
         prediction_lengths = [len(prediction.split()) for prediction in hypotheses]
 
-        exact_matches = sum([target == prediction for target, prediction in zip(references, hypotheses)])
+        exact_matches = sum(
+            [target == prediction for target, prediction in zip(references, hypotheses)]
+        )
 
         summary[dataset_name] = {
             "avg_rouge_l": rouge_l_score,
@@ -133,27 +147,39 @@ def save_summary(results, args, logger):
 
 
 def main():
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+    )
     logger = logging.getLogger(__name__)
 
     args = parser.parse_args()
     args.rank = 0
+
     def random_seed(seed=42, rank=0):
         torch.manual_seed(seed + rank)
         np.random.seed(seed + rank)
         random.seed(seed + rank)
+
     random_seed(args.seed)
 
     if args.checkpoint_paths is not None:
-        args.ckpt_basename = os.path.dirname(args.checkpoint_paths).split('/')[-1] + '-' + os.path.basename(args.checkpoint_paths).replace('.pt', '')
+        args.ckpt_basename = (
+            os.path.dirname(args.checkpoint_paths).split("/")[-1]
+            + "-"
+            + os.path.basename(args.checkpoint_paths).replace(".pt", "")
+        )
     else:
-        args.ckpt_basename = 'no_checkpoint'
-    args.results_dir = os.path.join(args.results_dir, args.ckpt_basename, f'{os.path.basename(args.instruction_path).replace(".json", "")}_{args.num_samples}')
-    logger.info('args '+'-'*100)
+        args.ckpt_basename = "no_checkpoint"
+    args.results_dir = os.path.join(
+        args.results_dir,
+        args.ckpt_basename,
+        f'{os.path.basename(args.instruction_path).replace(".json", "")}_{args.num_samples}',
+    )
+    logger.info("args " + "-" * 100)
     for key, value in args.__dict__.items():
-        logger.info("\t{:<30}\t{}".format(key+":", value))
-    logger.info('-'*100)
-    
+        logger.info("\t{:<30}\t{}".format(key + ":", value))
+    logger.info("-" * 100)
+
     # ------------------------------------
     # Load Model and Checkpoints
     # ------------------------------------
@@ -165,8 +191,8 @@ def main():
         clip_vision_encoder_path=args.vision_encoder_path,
         clip_vision_encoder_pretrained=args.vision_encoder_pretrained,
         cross_attn_every_n_layers=args.cross_attn_every_n_layers,
-        v1=args.v1
-        )
+        v1=args.v1,
+    )
 
     # ------------------------------------
     # ↓ For debugging only
@@ -201,13 +227,13 @@ def main():
         logger=logger,
         img_dir=args.img_dir,
         args=args,
-        mode='test'
-        )
+        mode="test",
+    )
 
     dataset_names = []
     dataset_results = defaultdict(list)
 
-    for index, item in enumerate(tqdm(dataset)):            
+    for index, item in enumerate(tqdm(dataset)):
         img_paths, text, instruction_str, sample = item
 
         prediction, full_text = inferencer(
@@ -221,23 +247,27 @@ def main():
             do_sample=args.do_sample,
             length_penalty=args.length_penalty,
             no_repeat_ngram_size=args.no_repeat_ngram_size,
-            response_split="### Assistant:"
+            response_split="### Assistant:",
         )
 
-        dataset_name = dataset.configs[sample['dataset_idx']]['dataset_name']
-        instruction_str = instruction_str.replace('<|endofchunk|>', '')
-        dataset_results[dataset_name].append({
-            "input": add_image_dir(sample['input'], sample['img_dir']),
-            "output": prediction[0],
-            "target": sample['output'],
-            "prompt": instruction_str,
-        })
+        dataset_name = dataset.configs[sample["dataset_idx"]]["dataset_name"]
+        instruction_str = instruction_str.replace("<|endofchunk|>", "")
+        dataset_results[dataset_name].append(
+            {
+                "input": add_image_dir(sample["input"], sample["img_dir"]),
+                "output": prediction[0],
+                "target": sample["output"],
+                "prompt": instruction_str,
+            }
+        )
         dataset_names.append(dataset_name)
-        print('-'*64)
-        print(f'[dataset]:   {dataset_name} ({sample["dataset_idx"] + 1}/{len(dataset.configs)})')
-        print(f'[images]:    {img_paths}')
-        print(f'[prompt]:    {instruction_str}')
-        print(f'\n*** PREDICTION ***\n{prediction[0]}')
+        print("-" * 64)
+        print(
+            f'[dataset]:   {dataset_name} ({sample["dataset_idx"] + 1}/{len(dataset.configs)})'
+        )
+        print(f"[images]:    {img_paths}")
+        print(f"[prompt]:    {instruction_str}")
+        print(f"\n*** PREDICTION ***\n{prediction[0]}")
         print(f'\n*** TARGET ***\n{sample["output"]}')
 
         if index % 10 == 0:

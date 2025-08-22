@@ -239,7 +239,7 @@ class GatedCrossAttentionBlock(nn.Module):
         heads=8,
         ff_mult=4,
         only_attend_immediate_media=True,
-        xattn_no_ffn=False
+        xattn_no_ffn=False,
     ):
         super().__init__()
         self.attn = MaskedCrossAttention(
@@ -273,7 +273,7 @@ class GatedCrossAttentionBlock(nn.Module):
             * self.attn_gate.tanh()
             + x
         )
-        
+
         if not self.xattn_no_ffn:
             x = self.ff(x) * self.ff_gate.tanh() + x
 

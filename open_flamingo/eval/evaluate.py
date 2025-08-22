@@ -774,9 +774,11 @@ def evaluate_captioning(
 
     metrics = compute_cider(
         result_path=results_path,
-        annotations_path=args.coco_annotations_json_path
-        if dataset_name == "coco"
-        else args.flickr_annotations_json_path,
+        annotations_path=(
+            args.coco_annotations_json_path
+            if dataset_name == "coco"
+            else args.flickr_annotations_json_path
+        ),
     )
 
     # delete the temporary file
@@ -1250,9 +1252,11 @@ def evaluate_classification(
                     "id": batch["id"][i],
                     "gt_label": y_i,
                     "pred_label": top5[0],
-                    "pred_score": overall_probs[i][highest_prob_idxs[0]]
-                    if dataset_name == "hateful_memes"
-                    else None,  # only for hateful memes
+                    "pred_score": (
+                        overall_probs[i][highest_prob_idxs[0]]
+                        if dataset_name == "hateful_memes"
+                        else None
+                    ),  # only for hateful memes
                 }
             )
 

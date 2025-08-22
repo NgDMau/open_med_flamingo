@@ -15,7 +15,7 @@ class Flamingo(nn.Module):
         vis_dim: int,
         cross_attn_every_n_layers: int = 1,
         use_media_placement_augmentation: bool = False,
-        unfreeze_vision_encoder = False,
+        unfreeze_vision_encoder=False,
         xattn_no_ffn=False,
         tokenizer=None,
         perceiver_depth=6,
@@ -39,7 +39,7 @@ class Flamingo(nn.Module):
         self.vision_encoder = vision_encoder
         self.num_latents = 64
         self.perceiver = PerceiverResampler(
-            dim=self.vis_dim, 
+            dim=self.vis_dim,
             num_latents=self.num_latents,
             depth=perceiver_depth,
             dim_head=64,
@@ -47,7 +47,7 @@ class Flamingo(nn.Module):
             max_num_media=None,
             max_num_frames=None,
             ff_mult=4,
-            )
+        )
         self.lang_encoder = lang_encoder
         self.lang_encoder.init_flamingo(
             media_token_id=media_token_id,
@@ -62,7 +62,7 @@ class Flamingo(nn.Module):
         # if self.instruction_encoder is not None:
         #     self.instruction_embedding_to_preciver_latents = nn.Linear(self.instruction_encoder.get_sentence_embedding_dimension(), self.vis_dim*self.num_latents, bias=False)
         #     nn.init.zeros_(self.instruction_embedding_to_preciver_latents.weight)
-            # print(self.instruction_embedding_to_preciver_latents)
+        # print(self.instruction_embedding_to_preciver_latents)
 
     def forward(
         self,
@@ -252,7 +252,7 @@ class Flamingo(nn.Module):
 
     #         while len(intruction_sentences[i]) != vision_x.size(1):
     #             intruction_sentences[i].append('')
-            
+
     #     # print('intruction_sentences:', intruction_sentences)
     #     intruction_sentences_flattented = [item for sublist in intruction_sentences for item in sublist]
     #     # print('intruction_sentences_flattented:', intruction_sentences_flattented)
@@ -261,7 +261,7 @@ class Flamingo(nn.Module):
     #     intruction_embeddings = intruction_embeddings.view(lang_x.size(0), -1, self.instruction_encoder.get_sentence_embedding_dimension())
     #     # print('intruction_embeddings:', intruction_embeddings.size())
     #     intruction_embeddings = intruction_embeddings.to(self.instruction_embedding_to_preciver_latents.weight.device, dtype=self.instruction_embedding_to_preciver_latents.weight.dtype)
-        
+
     #     # print('intruction_embeddings.size():', intruction_embeddings.size(), intruction_embeddings.device, type(intruction_embeddings))
     #     instruction_latents = self.instruction_embedding_to_preciver_latents(intruction_embeddings).view(lang_x.size(0), -1, self.num_latents, self.vis_dim)
     #     # print('instruction_latents:', instruction_latents.size(), instruction_latents.sum())
@@ -277,7 +277,7 @@ class Flamingo(nn.Module):
     #     vision_x = rearrange(vision_x, "(b T F) v d -> b T F v d", b=b, T=T, F=F)
 
     #     vision_x = self.perceiver(vision_x)  # reshapes to (b, T, n, d)
-        
+
     #     # fusion
     #     vision_x = vision_x + instruction_latents
     #     for layer in self.lang_encoder._get_decoder_layers():

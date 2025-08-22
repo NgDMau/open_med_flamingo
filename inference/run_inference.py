@@ -1,6 +1,6 @@
 import json, requests
 
-url = 'http://0.0.0.0:1234/clever_flamingo'
+url = "http://0.0.0.0:1234/clever_flamingo"
 
 instruction = "Can you give some details in the picture? Please be correct, don't say something you are not sure"
 # instruction = "What is capital of France?"
@@ -8,23 +8,23 @@ instruction = "Can you give some details in the picture? Please be correct, don'
 instruction = """What's the clinical severity of this disease state?"""
 content_lst = {
     # remenber to add '<image>' to your instruction to indecate the location of image(s)
-    'prompt': f'{instruction}\n',     
-    'imgpaths': ['/app/baseline_models/sample_data/llama_mri_cot/images/test/238.jpg'],
-    'args':{
-        'max_new_token':512,
-        'num_beams':1,
-        'temperature':1.0,
-        'top_k':20,
-        'top_p':1,
-        'do_sample':True,
-        'length_penalty':1.0,
-        'no_repeat_ngram_size':3,
-    }
+    "prompt": f"{instruction}\n",
+    "imgpaths": ["/app/baseline_models/sample_data/llama_mri_cot/images/test/238.jpg"],
+    "args": {
+        "max_new_token": 512,
+        "num_beams": 1,
+        "temperature": 1.0,
+        "top_k": 20,
+        "top_p": 1,
+        "do_sample": True,
+        "length_penalty": 1.0,
+        "no_repeat_ngram_size": 3,
+    },
 }
 
-d = {"content_lst": content_lst,'typ': 'None'}
-d = json.dumps(d).encode('utf8')
+d = {"content_lst": content_lst, "typ": "None"}
+d = json.dumps(d).encode("utf8")
 r = requests.post(url, data=d)
 js = json.loads(r.text)
 
-print(js['result']['response'])
+print(js["result"]["response"])

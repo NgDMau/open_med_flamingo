@@ -7,12 +7,15 @@ from open_flamingo.instruction_tuning.inferencer import Inferencer
 
 app = FastAPI()
 
+
 class Input(BaseModel):
     content_lst: dict
     typ: str
 
+
 class Response(BaseModel):
     result: dict
+
 
 # # Clever Flamingo V1
 # inferencer = Inferencer(
@@ -41,44 +44,48 @@ inferencer = Inferencer(
     # checkpoint_paths='/app/baseline_models/instruct_flamingo/runs/0821-clever_flamingo_v2_3b-2k_context-40G-resume-from-mpt7b-checkpoint/checkpoint_10.pt',
     checkpoint_paths="/app/baseline_models/instruct_flamingo/runs/0821-clever_flamingo_v2_3b-2k_context-40G-resume-from-mpt7b-checkpoint-03/checkpoint_15.pt",
     clip_vision_encoder_path="ViT-L-14-336",
-    clip_vision_encoder_pretrained='openai',
-    tuning_config='/app/baseline_models/instruct_flamingo/open_flamingo/instruction_tuning/tuning_config/lora[lm+xqttn]+perceiver.json',
+    clip_vision_encoder_pretrained="openai",
+    tuning_config="/app/baseline_models/instruct_flamingo/open_flamingo/instruction_tuning/tuning_config/lora[lm+xqttn]+perceiver.json",
     cross_attn_every_n_layers=4,
-    v1=False
-    )
+    v1=False,
+)
 
-log_file = '/app/baseline_models/instruct_flamingo/serving/api_log_v2.json'
+log_file = "/app/baseline_models/instruct_flamingo/serving/api_log_v2.json"
 
-@app.post("/clever_flamingo",response_model=Response)        
+
+@app.post("/clever_flamingo", response_model=Response)
 async def clever_flamingo(request: Input):
     time_start = time.time()
     response, full_text = inferencer(
-        prompt=                 request.content_lst['prompt'],
-        images=                 request.content_lst['imgpaths'],
-        max_new_token=          request.content_lst['args']['max_new_token'],
-        num_beams=              request.content_lst['args']['num_beams'],
-        temperature=            request.content_lst['args']['temperature'],
-        top_k=                  request.content_lst['args']['top_k'],
-        top_p=                  request.content_lst['args']['top_p'],
-        do_sample=              request.content_lst['args']['do_sample'],
-        length_penalty=         request.content_lst['args']['length_penalty'],
-        no_repeat_ngram_size=   request.content_lst['args']['no_repeat_ngram_size'],
-        response_split="### Assistant:"
+        prompt=request.content_lst["prompt"],
+        images=request.content_lst["imgpaths"],
+        max_new_token=request.content_lst["args"]["max_new_token"],
+        num_beams=request.content_lst["args"]["num_beams"],
+        temperature=request.content_lst["args"]["temperature"],
+        top_k=request.content_lst["args"]["top_k"],
+        top_p=request.content_lst["args"]["top_p"],
+        do_sample=request.content_lst["args"]["do_sample"],
+        length_penalty=request.content_lst["args"]["length_penalty"],
+        no_repeat_ngram_size=request.content_lst["args"]["no_repeat_ngram_size"],
+        response_split="### Assistant:",
     )
     time_stamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
     time_elapsed = time.time() - time_start
     sample_log = {
-        'time': time_stamp,
-        'time_elapsed': time_elapsed,
-        'request': str(request),
-        'response': str(response),
+        "time": time_stamp,
+        "time_elapsed": time_elapsed,
+        "request": str(request),
+        "response": str(response),
     }
-    
-    print(f'Time: {time_stamp} (time_elapsed: {time_elapsed:.2f}s)\n{request.content_lst["imgpaths"]}\n{request.content_lst["prompt"]}\n{response}\n')
-    with open(log_file, 'a') as f:
-        f.write(json.dumps(sample_log, indent=4) + '\n')
+
+    print(
+        f'Time: {time_stamp} (time_elapsed: {time_elapsed:.2f}s)\n{request.content_lst["imgpaths"]}\n{request.content_lst["prompt"]}\n{response}\n'
+    )
+    with open(log_file, "a") as f:
+        f.write(json.dumps(sample_log, indent=4) + "\n")
 
     return Response(result={"response": response})
+
 
 # Usage:
 # CUDA_VISIBLE_DEVICES=7 uvicorn api:app --host=0.0.0.0 --port=44400 --log-level=info

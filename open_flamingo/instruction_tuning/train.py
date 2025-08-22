@@ -1,4 +1,4 @@
-""" Main training script """
+"""Main training script"""
 
 import argparse
 import glob
@@ -20,7 +20,7 @@ from train_utils import (
     save_checkpoint,
     get_params_count_summary,
     prepare_model_for_tuning,
-    resume_from_checkpoints
+    resume_from_checkpoints,
 )
 from transformers import (
     get_constant_schedule_with_warmup,
@@ -62,14 +62,18 @@ def main():
         type=str,
         help="path to instruction tuning data (Aplaca json format)",
     )
-    parser.add_argument("--instruction_prompt_templete", type=str, default='guanaco')
+    parser.add_argument("--instruction_prompt_templete", type=str, default="guanaco")
     parser.add_argument("--max_length", type=int, default=256)
     parser.add_argument("--multiturn_augmentation", type=int, default=1)
     parser.add_argument("--max_img", type=int, default=5)
-    parser.add_argument("--dataset_sampling_mode", type=str, default='ratio')
+    parser.add_argument("--dataset_sampling_mode", type=str, default="ratio")
     parser.add_argument("--continue_training", action="store_true")
     parser.add_argument("--skip_check_overlength", action="store_true")
-    parser.add_argument("--tuning_config", type=str, default='open_flamingo/instruction_tuning/tuning_config/lora.json')
+    parser.add_argument(
+        "--tuning_config",
+        type=str,
+        default="open_flamingo/instruction_tuning/tuning_config/lora.json",
+    )
     parser.add_argument("--epoch_num_samples", type=int, default=-1)
 
     # model configuration args
@@ -240,10 +244,14 @@ def main():
     # Set up logging
     if not os.path.exists(args.run_name):
         os.makedirs(args.run_name, exist_ok=True)
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+    )
     logger = logging.getLogger(__name__)
-    file_handler = logging.FileHandler(os.path.join(args.run_name, 'train.log'))
-    file_handler.setFormatter(logging.Formatter('%(asctime)s [%(module)s:%(lineno)d] %(message)s'))
+    file_handler = logging.FileHandler(os.path.join(args.run_name, "train.log"))
+    file_handler.setFormatter(
+        logging.Formatter("%(asctime)s [%(module)s:%(lineno)d] %(message)s")
+    )
     logger.addHandler(file_handler)
 
     # Initialize model
@@ -259,26 +267,32 @@ def main():
     )
 
     # TODO: add comments to explain loading checkpoints twice
-    logger.info('loading checkpoints before PEFT')
+    logger.info("loading checkpoints before PEFT")
     if args.resume_from_checkpoint is not None:
-        model, checkpoint, resume_from_epoch, message = resume_from_checkpoints(model, args.resume_from_checkpoint, args, logger)
+        model, checkpoint, resume_from_epoch, message = resume_from_checkpoints(
+            model, args.resume_from_checkpoint, args, logger
+        )
 
     model, config = prepare_model_for_tuning(model, args.tuning_config)
 
-    if (config['from_pretrained'] or config['lora']) and args.resume_from_checkpoint is not None:
-        logger.info('loading checkpoints after PEFT')
-        model, checkpoint, resume_from_epoch, message = resume_from_checkpoints(model, args.resume_from_checkpoint, args, logger)
+    if (
+        config["from_pretrained"] or config["lora"]
+    ) and args.resume_from_checkpoint is not None:
+        logger.info("loading checkpoints after PEFT")
+        model, checkpoint, resume_from_epoch, message = resume_from_checkpoints(
+            model, args.resume_from_checkpoint, args, logger
+        )
 
-    if args.rank==0:
+    if args.rank == 0:
         logger.info(get_params_count_summary(model))
-        logger.info('args')
+        logger.info("args")
         for key, value in args.__dict__.items():
-            logger.info("\t{:<30}\t{}".format(key+":", value))
-        
-        logger.info('Tuning config')
+            logger.info("\t{:<30}\t{}".format(key + ":", value))
+
+        logger.info("Tuning config")
         logger.info(config)
 
-        logger.info('model.lang_encoder.config')
+        logger.info("model.lang_encoder.config")
         logger.info(model.lang_encoder.config)
 
     random_seed(args.seed, args.rank)
@@ -293,11 +307,10 @@ def main():
             config=vars(args),
         )
     if args.rank == 0:
-        os.makedirs(os.path.join(args.run_name, 'tensorboard'), exist_ok=True)
-        tensorboard_writer = SummaryWriter(os.path.join(args.run_name, 'tensorboard'))
+        os.makedirs(os.path.join(args.run_name, "tensorboard"), exist_ok=True)
+        tensorboard_writer = SummaryWriter(os.path.join(args.run_name, "tensorboard"))
     else:
         tensorboard_writer = None
-
 
     # Load model checkpoint on CPU
     # if os.path.exists(f"{args.run_name}") and args.resume_from_checkpoint is None:
@@ -314,7 +327,7 @@ def main():
     #             f"Found checkpoint {args.resume_from_checkpoint} for run {args.run_name}."
     #         )
     # model, checkpoint, resume_from_epoch, message = resume_from_checkpoints(model, args.resume_from_checkpoint, args, logger)
-    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # resume_from_epoch = 0
     # if args.resume_from_checkpoint is not None:
     #     if args.rank == 0:
@@ -326,7 +339,7 @@ def main():
     #     # for fsdp, only one rank needs to load the state dict
     #     if not args.fsdp or args.rank == 0:
     #         model.load_state_dict(msd, False)
-    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # if args.resume_from_checkpoint is not None:
     #     for this_checkpoint in args.resume_from_checkpoint.split(','):
     #         if args.rank == 0:
@@ -377,9 +390,11 @@ def main():
             cpu_offload=CPUOffload(offload_params=False),
             device_id=device_id,
             sync_module_states=True,  # broadcast loaded ckpt from rank 0 -> all ranks
-            sharding_strategy=ShardingStrategy.FULL_SHARD
-            if args.fsdp_sharding_strategy == "full"
-            else ShardingStrategy.HYBRID_SHARD,
+            sharding_strategy=(
+                ShardingStrategy.FULL_SHARD
+                if args.fsdp_sharding_strategy == "full"
+                else ShardingStrategy.HYBRID_SHARD
+            ),
             use_orig_params=args.fsdp_use_orig_params,
             mixed_precision=mp_policy,
             forward_prefetch=True,
@@ -453,15 +468,25 @@ def main():
         )
 
     # load optimizer checkpoint
-    if args.resume_from_checkpoint is not None and "optimizer_state_dict" in checkpoint and args.continue_training:
+    if (
+        args.resume_from_checkpoint is not None
+        and "optimizer_state_dict" in checkpoint
+        and args.continue_training
+    ):
         osd = checkpoint["optimizer_state_dict"]
         if args.fsdp:
             osd = FSDP.optim_state_dict_to_load(osd, ddp_model, optimizer)
         optimizer.load_state_dict(osd)
 
     # Initialize data loaders
-    instruction_dataset = get_data(args, image_processor, tokenizer, logger=logger, epoch=0)
-    train_num_samples = len(instruction_dataset.dataloader.dataset) if args.train_num_samples==-1 else args.train_num_samples
+    instruction_dataset = get_data(
+        args, image_processor, tokenizer, logger=logger, epoch=0
+    )
+    train_num_samples = (
+        len(instruction_dataset.dataloader.dataset)
+        if args.train_num_samples == -1
+        else args.train_num_samples
+    )
     total_training_steps = (
         (train_num_samples) // (args.batch_size * args.world_size)
     ) * args.num_epochs
@@ -487,7 +512,11 @@ def main():
         )
 
     # load lr scheduler checkpoint
-    if args.resume_from_checkpoint is not None and "lr_scheduler_state_dict" in checkpoint and args.continue_training:
+    if (
+        args.resume_from_checkpoint is not None
+        and "lr_scheduler_state_dict" in checkpoint
+        and args.continue_training
+    ):
         lr_scheduler.load_state_dict(checkpoint["lr_scheduler_state_dict"])
 
     # Start training!
@@ -502,16 +531,18 @@ def main():
             optimizer=optimizer,
             lr_scheduler=lr_scheduler,
             dataloader=instruction_dataset.dataloader,
-            logger=logger,    
+            logger=logger,
             device_id=device_id,
             tensorboard_writer=tensorboard_writer,
             wandb=wandb,
         )
         save_checkpoint(ddp_model, optimizer, lr_scheduler, epoch, args)
-    
+
         # reinitialize dataset to sample different images
-        if epoch != (args.num_epochs-1):
-            instruction_dataset = get_data(args, image_processor, tokenizer, logger=logger, epoch=epoch)
+        if epoch != (args.num_epochs - 1):
+            instruction_dataset = get_data(
+                args, image_processor, tokenizer, logger=logger, epoch=epoch
+            )
 
     # save final checkpoint
     save_checkpoint(ddp_model, optimizer, lr_scheduler, epoch, args)

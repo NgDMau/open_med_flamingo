@@ -1,4 +1,3 @@
-
 import json
 import os
 import random
@@ -21,25 +20,25 @@ instruction_templates = [
     "Whether it is changed? State the differences between the provided remote sensing images.",
 ]
 
+
 def convert_to_alpaca_format(input_json_file):
     with open(input_json_file, "r") as f:
-        data = json.load(f)['images']
-    
+        data = json.load(f)["images"]
 
     instruction_data = {
-        'train': [],
-        'val': [],
-        'test': [],
+        "train": [],
+        "val": [],
+        "test": [],
     }
 
     for item in data:
-        sentences = [sentence['raw'][1:-2] for sentence in item["sentences"]]
+        sentences = [sentence["raw"][1:-2] for sentence in item["sentences"]]
         split = item["split"]
         filename = item["filename"]
 
-        earlier_image_identifier = 'Earlier image'
-        later_image_identifier = 'Later image'
-        spliter = ', '
+        earlier_image_identifier = "Earlier image"
+        later_image_identifier = "Later image"
+        spliter = ", "
         left_image_path = f"/cpfs/shared/research-llm/instruc_data_en/multimodal_instruct_tuning/Levir-CC/images/{split}/A/{filename}"
         right_image_path = f"/cpfs/shared/research-llm/instruc_data_en/multimodal_instruct_tuning/Levir-CC/images/{split}/B/{filename}"
         input_text_segments = [
@@ -47,23 +46,30 @@ def convert_to_alpaca_format(input_json_file):
             f"{later_image_identifier}: <img_path>{right_image_path}<img_path>",
         ]
         random.shuffle(input_text_segments)
-        input_text = f'{spliter}'.join(input_text_segments)
+        input_text = f"{spliter}".join(input_text_segments)
 
         # chose the longest one
-        output_text = max(sentences, key=len).strip().capitalize() + '.'
+        output_text = max(sentences, key=len).strip().capitalize() + "."
         # output_text = '\n'.join(sentences)
 
         instruction_data[split].append(
             {
-                "input": random.choice(instruction_templates) + '\n' + input_text,
+                "input": random.choice(instruction_templates) + "\n" + input_text,
                 "output": output_text,
             }
         )
 
-    for split in ['train', 'val', 'test']:
+    for split in ["train", "val", "test"]:
 
-        with open('converted_datasets/levir-cc-caption/' + os.path.basename(input_json_file).replace('.json', f'_instruction_{split}.json'), "w") as f:
+        with open(
+            "converted_datasets/levir-cc-caption/"
+            + os.path.basename(input_json_file).replace(
+                ".json", f"_instruction_{split}.json"
+            ),
+            "w",
+        ) as f:
             json.dump(instruction_data[split], f, ensure_ascii=False, indent=2)
+
 
 def main():
     os.makedirs("converted_datasets/levir-cc-caption", exist_ok=True)
@@ -71,6 +77,6 @@ def main():
         "/cpfs/shared/research-llm/instruc_data_en/multimodal_instruct_tuning/Levir-CC/LevirCCcaptions.json"
     )
 
+
 if __name__ == "__main__":
     main()
-

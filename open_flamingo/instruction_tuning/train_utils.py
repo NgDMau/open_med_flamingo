@@ -93,12 +93,14 @@ def train_one_epoch(
         global_step = num_steps + epoch * num_batches_per_epoch
 
         #### FORWARD PASS ####
-        images, text, target_mask, dataset_idxs_batch  = batch
+        images, text, target_mask, dataset_idxs_batch = batch
         images = images.to(device_id, dtype=cast_dtype, non_blocking=True).unsqueeze(2)
-        input_ids = torch.stack([x for x in text['input_ids']]).squeeze(1).to(device_id)
-        attention_mask = torch.stack([x for x in text['attention_mask']]).squeeze(1).to(device_id)
+        input_ids = torch.stack([x for x in text["input_ids"]]).squeeze(1).to(device_id)
+        attention_mask = (
+            torch.stack([x for x in text["attention_mask"]]).squeeze(1).to(device_id)
+        )
         # change attention mask type to bool
-        attention_mask = attention_mask.type(torch.bool)       
+        attention_mask = attention_mask.type(torch.bool)
 
         # set up labels; language model is expected to handle shifting
         labels = input_ids.clone()
@@ -107,7 +109,6 @@ def train_one_epoch(
         # only calculate loss on response tokens
         target_mask = target_mask.squeeze(1)
         labels[target_mask == 0] = -100
-
 
         for i in range(labels.shape[0]):
             # # remove loss for any token before the first <image> token
@@ -194,8 +195,10 @@ def train_one_epoch(
             grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
 
         # step optimizer and log
-        if num_steps==0 or (((num_steps + 1) % args.gradient_accumulation_steps) == 0) or (
-            num_steps == num_batches_per_epoch - 1
+        if (
+            num_steps == 0
+            or (((num_steps + 1) % args.gradient_accumulation_steps) == 0)
+            or (num_steps == num_batches_per_epoch - 1)
         ):
             optimizer.step()
             lr_scheduler.step()
@@ -211,7 +214,7 @@ def train_one_epoch(
             accumulated_loss = 0.0
 
             # rank 0 logging
-            if args.rank == 0:# and args.report_to_wandb:
+            if args.rank == 0:  # and args.report_to_wandb:
                 samples_per_second = (
                     args.gradient_accumulation_steps
                     * args.batch_size
@@ -219,14 +222,22 @@ def train_one_epoch(
                     / step_time_m.val
                 )
                 samples_per_second_per_gpu = (
-                    args.gradient_accumulation_steps
-                    * args.batch_size
-                    / step_time_m.val
+                    args.gradient_accumulation_steps * args.batch_size / step_time_m.val
                 )
-                tensorboard_writer.add_scalar('time/data_time', data_time_m.avg, global_step)
-                tensorboard_writer.add_scalar('time/step_time_m', step_time_m.avg, global_step)
-                tensorboard_writer.add_scalar('time/samples_per_second', samples_per_second, global_step)
-                tensorboard_writer.add_scalar('time/samples_per_second_per_gpu', samples_per_second_per_gpu, global_step)
+                tensorboard_writer.add_scalar(
+                    "time/data_time", data_time_m.avg, global_step
+                )
+                tensorboard_writer.add_scalar(
+                    "time/step_time_m", step_time_m.avg, global_step
+                )
+                tensorboard_writer.add_scalar(
+                    "time/samples_per_second", samples_per_second, global_step
+                )
+                tensorboard_writer.add_scalar(
+                    "time/samples_per_second_per_gpu",
+                    samples_per_second_per_gpu,
+                    global_step,
+                )
                 # wandb.log(
                 #     {
                 #         "data_time": data_time_m.avg,
@@ -253,20 +264,24 @@ def train_one_epoch(
                 #     {"loss_mmc4": loss_mmc4.item(), "global_step": global_step},
                 #     commit=True,
                 # )
-                tensorboard_writer.add_scalar('train/loss', average_loss, global_step)
-                tensorboard_writer.add_scalar('train/lr', optimizer.param_groups[0]["lr"], global_step)
-                tensorboard_writer.add_scalar('train/grad_norm', grad_norm.type(torch.float32), global_step)
+                tensorboard_writer.add_scalar("train/loss", average_loss, global_step)
+                tensorboard_writer.add_scalar(
+                    "train/lr", optimizer.param_groups[0]["lr"], global_step
+                )
+                tensorboard_writer.add_scalar(
+                    "train/grad_norm", grad_norm.type(torch.float32), global_step
+                )
 
         # Log loss to console
         if ((num_steps + 1) % args.logging_steps == 0) and args.rank == 0:
-            
+
             # input_tokens = tokenizer.convert_ids_to_tokens(input_ids[0].squeeze().tolist())
             # input_text = tokenizer.convert_tokens_to_string(input_tokens)
             # print('[input_ids]')
             # # print(input_ids[0])
             # print(input_text)
             # print('-'*128)
-            
+
             # labels_ = copy.deepcopy(labels)
             # labels_[labels == -100] = 1
             # mask_token = tokenizer.convert_tokens_to_string(tokenizer.convert_ids_to_tokens([1]))
@@ -287,7 +302,7 @@ def train_one_epoch(
             # print(predicted_text)
             logger.info(
                 f"Step {num_steps+1}/{num_batches_per_epoch} of epoch {epoch+1}/{args.num_epochs} complete. Loss: {loss.item():.7f}. LR: {optimizer.param_groups[0]['lr']:.7f}"
-            )          
+            )
 
 
 class AverageMeter(object):
@@ -340,7 +355,7 @@ def filter_state_dict_to_trainable(model, state_dict):
         if ("lang_encoder.old_decoder_blocks" in n)
         or ("lang_encoder.gated_cross_attn_layers" in n)
         # PEFT add 'base_model.model' to parameter name
-        or ("lang_encoder.base_model.model.old_decoder_blocks" in n) 
+        or ("lang_encoder.base_model.model.old_decoder_blocks" in n)
         or ("lang_encoder.base_model.model.gated_cross_attn_layers" in n)
         or ("vision_encoder" in n)
     ]
@@ -392,26 +407,31 @@ def save_checkpoint(model, optimizer, lr_scheduler, epoch, args):
 
 
 def get_params_count(model, max_name_len: int = 100):
-  params = [(name[:max_name_len], p.numel(), str(tuple(p.shape)), p.requires_grad) for name, p in model.named_parameters()]
-  total_trainable_params = sum([x[1] for x in params if x[-1]])
-  total_nontrainable_params = sum([x[1] for x in params if not x[-1]])
-  return params, total_trainable_params, total_nontrainable_params
+    params = [
+        (name[:max_name_len], p.numel(), str(tuple(p.shape)), p.requires_grad)
+        for name, p in model.named_parameters()
+    ]
+    total_trainable_params = sum([x[1] for x in params if x[-1]])
+    total_nontrainable_params = sum([x[1] for x in params if not x[-1]])
+    return params, total_trainable_params, total_nontrainable_params
 
 
 def get_params_count_summary(model, max_name_len: int = 100):
     padding = 100
-    params, total_trainable_params, total_nontrainable_params = get_params_count(model, max_name_len)
-    param_counts_text = ''
-    param_counts_text += '=' * (max_name_len + padding) + '\n'
+    params, total_trainable_params, total_nontrainable_params = get_params_count(
+        model, max_name_len
+    )
+    param_counts_text = ""
+    param_counts_text += "=" * (max_name_len + padding) + "\n"
     param_counts_text += f'| {"Module":<{max_name_len}} | {"Trainable":<10} | {"Shape":>15} | {"Param Count":>12} |\n'
-    param_counts_text += '-' * (max_name_len + padding) + '\n'
+    param_counts_text += "-" * (max_name_len + padding) + "\n"
     for name, param_count, shape, trainable in params:
         truncated_name = name[:max_name_len]  # Truncate the name if it's too long
         param_counts_text += f'| {truncated_name:<{max_name_len}} | {"True" if trainable else "False":<10} | {shape:>15} | {param_count:>12,} |\n'
-    param_counts_text += '-' * (max_name_len + padding) + '\n'
+    param_counts_text += "-" * (max_name_len + padding) + "\n"
     param_counts_text += f'| {"Total trainable params":<{max_name_len}} | {"":<10} | {"":<15} | {total_trainable_params:>12,} |\n'
     param_counts_text += f'| {"Total non-trainable params":<{max_name_len}} | {"":<10} | {"":<15} | {total_nontrainable_params:>12,} |\n'
-    param_counts_text += '=' * (max_name_len + padding) + '\n'
+    param_counts_text += "=" * (max_name_len + padding) + "\n"
     return param_counts_text
 
 
@@ -421,18 +441,17 @@ def prepare_model_for_tuning(model, config):
     model.requires_grad_(False)
     assert sum(p.numel() for p in model.parameters() if p.requires_grad) == 0
 
-    config = json.load(open(config, 'r'))
-    if config['from_pretrained']:
+    config = json.load(open(config, "r"))
+    if config["from_pretrained"]:
         model.lang_encoder = PeftModel.from_pretrained(
-            model.lang_encoder,
-            config['from_pretrained']
+            model.lang_encoder, config["from_pretrained"]
         )
-    elif config['lora']:
+    elif config["lora"]:
         lora_config = LoraConfig(
-            r=config['lora_r'],
-            lora_alpha=config['lora_alpha'],
-            target_modules=config['lora_target_modules'],
-            lora_dropout=config['lora_dropout'],
+            r=config["lora_r"],
+            lora_alpha=config["lora_alpha"],
+            target_modules=config["lora_target_modules"],
+            lora_dropout=config["lora_dropout"],
             bias="none",  # won't use bias currently
             modules_to_save=[],  # TODO: might be helpful if save partial model
             task_type="VL",
@@ -441,7 +460,7 @@ def prepare_model_for_tuning(model, config):
 
     # manually unfreeze modules, we use a `substring` fashion mathcing
     for name, param in model.named_parameters():
-        if any(substr in name for substr in config['unfrozen']):
+        if any(substr in name for substr in config["unfrozen"]):
             param.requires_grad = True
 
     return model, config
@@ -449,7 +468,7 @@ def prepare_model_for_tuning(model, config):
 
 def resume_from_checkpoints(model, checkpoints, args=None, logger=None):
     messages = []
-    for this_checkpoint in checkpoints.split(','):
+    for this_checkpoint in checkpoints.split(","):
         # print('#'*128)
         # print('loading checkpoint from', this_checkpoint)
         if args is not None and logger is not None and args.rank == 0:
@@ -459,8 +478,12 @@ def resume_from_checkpoints(model, checkpoints, args=None, logger=None):
         resume_from_epoch = 0
         if args is not None and "epoch" in checkpoint.keys() and args.continue_training:
             resume_from_epoch = checkpoint["epoch"] + 1
-            
-        msd = checkpoint["model_state_dict"] if "model_state_dict" in checkpoint.keys() else checkpoint
+
+        msd = (
+            checkpoint["model_state_dict"]
+            if "model_state_dict" in checkpoint.keys()
+            else checkpoint
+        )
         msd = {k.replace("module.", ""): v for k, v in msd.items()}
 
         # for key in msd.keys():

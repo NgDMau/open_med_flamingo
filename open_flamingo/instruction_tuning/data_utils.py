@@ -64,9 +64,11 @@ def get_dataset_size(shards):
         sizes = json.load(open(sizes_filename, "r"))
         total_size = sum(
             [
-                int(sizes[os.path.basename(shard)])
-                if os.path.basename(shard) in sizes
-                else 0
+                (
+                    int(sizes[os.path.basename(shard)])
+                    if os.path.basename(shard) in sizes
+                    else 0
+                )
                 for shard in shards_list
             ]
         )

@@ -55,18 +55,20 @@ class EvalModel(BaseEvalModel):
         for example in batch:
             assert len(example) == 1, "BLIP-2 only supports one image per example"
             batch_images = torch.cat(
-                [
-                    batch_images,
-                    self.processor.image_processor(example, return_tensors="pt")[
-                        "pixel_values"
-                    ],
-                ]
-                if batch_images is not None
-                else [
-                    self.processor.image_processor(example, return_tensors="pt")[
-                        "pixel_values"
+                (
+                    [
+                        batch_images,
+                        self.processor.image_processor(example, return_tensors="pt")[
+                            "pixel_values"
+                        ],
                     ]
-                ],
+                    if batch_images is not None
+                    else [
+                        self.processor.image_processor(example, return_tensors="pt")[
+                            "pixel_values"
+                        ]
+                    ]
+                ),
                 dim=0,
             )
         return batch_images

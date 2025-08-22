@@ -1,4 +1,3 @@
-
 import json
 import os
 import random
@@ -23,6 +22,7 @@ instruction_templates = [
     "Whether it is changed? State the differences between the provided remote sensing images.",
 ]
 
+
 def concat_two_images(first_image_path, second_image_path, save_image_path):
     # Load the images
     first_image = Image.open(first_image_path)
@@ -31,7 +31,9 @@ def concat_two_images(first_image_path, second_image_path, save_image_path):
     # randomly choose from vertical and horizontal concatenation
     if random.random() < 0.5:
         # Concatenate vertically
-        concatenated_image = Image.new('RGB', (first_image.width, first_image.height + second_image.height))
+        concatenated_image = Image.new(
+            "RGB", (first_image.width, first_image.height + second_image.height)
+        )
         concatenated_image.paste(first_image, (0, 0))
         concatenated_image.paste(second_image, (0, first_image.height))
 
@@ -41,7 +43,9 @@ def concat_two_images(first_image_path, second_image_path, save_image_path):
 
     else:
         # Concatenate horizontally
-        concatenated_image = Image.new('RGB', (first_image.width + second_image.width, first_image.height))
+        concatenated_image = Image.new(
+            "RGB", (first_image.width + second_image.width, first_image.height)
+        )
         concatenated_image.paste(first_image, (0, 0))
         concatenated_image.paste(second_image, (first_image.width, 0))
 
@@ -53,24 +57,25 @@ def concat_two_images(first_image_path, second_image_path, save_image_path):
     concatenated_image.save(save_image_path)
 
 
-
 def convert_to_alpaca_format(input_json_file):
     with open(input_json_file, "r") as f:
-        data = json.load(f)['images']#[:10]
-    
+        data = json.load(f)["images"]  # [:10]
 
     instruction_data = {
-        'train': [],
-        'val': [],
-        'test': [],
+        "train": [],
+        "val": [],
+        "test": [],
     }
 
     for item in tqdm.tqdm(data):
-        sentences = [sentence['raw'][1:-2] for sentence in item["sentences"]]
+        sentences = [sentence["raw"][1:-2] for sentence in item["sentences"]]
         split = item["split"]
         filename = item["filename"]
 
-        os.makedirs(f"/cpfs/shared/research-llm/instruc_data_en/multimodal_instruct_tuning/Levir-CC/images/{split}/concat/", exist_ok=True)
+        os.makedirs(
+            f"/cpfs/shared/research-llm/instruc_data_en/multimodal_instruct_tuning/Levir-CC/images/{split}/concat/",
+            exist_ok=True,
+        )
 
         # earlier_image_identifier = 'Earlier image'
         # later_image_identifier = 'Later image'
@@ -81,24 +86,31 @@ def convert_to_alpaca_format(input_json_file):
 
         concat_two_images(left_image_path, right_image_path, concat_image_path)
 
-        input_text = f'<img_path>{concat_image_path}<img_path>'
+        input_text = f"<img_path>{concat_image_path}<img_path>"
 
         # chose the longest one
-        output_text = max(sentences, key=len).strip().capitalize() + '.'
+        output_text = max(sentences, key=len).strip().capitalize() + "."
         # output_text = '\n'.join(sentences)
 
         instruction_data[split].append(
             {
-                "input": random.choice(instruction_templates) + ' ' + input_text,
+                "input": random.choice(instruction_templates) + " " + input_text,
                 "output": output_text,
             }
         )
 
     # for split in ['train', 'val', 'test']:
-    for split in ['train']:
+    for split in ["train"]:
 
-        with open('converted_datasets/levir-cc-caption/' + os.path.basename(input_json_file).replace('.json', f'_instruction_{split}_concat.json'), "w") as f:
+        with open(
+            "converted_datasets/levir-cc-caption/"
+            + os.path.basename(input_json_file).replace(
+                ".json", f"_instruction_{split}_concat.json"
+            ),
+            "w",
+        ) as f:
             json.dump(instruction_data[split], f, ensure_ascii=False, indent=2)
+
 
 def main():
     os.makedirs("converted_datasets/levir-cc-caption", exist_ok=True)
@@ -106,6 +118,6 @@ def main():
         "/cpfs/shared/research-llm/instruc_data_en/multimodal_instruct_tuning/Levir-CC/LevirCCcaptions.json"
     )
 
+
 if __name__ == "__main__":
     main()
-

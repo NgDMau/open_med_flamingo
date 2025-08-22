@@ -44,14 +44,15 @@ class FlamingoLayer(nn.Module):
 
         if self.media_locations is None:
             # raise ValueError("media_locations must be conditioned before forward pass")
-            import warnings # somehow using PEFT lora adapter cause this error
+            import warnings  # somehow using PEFT lora adapter cause this error
+
             warnings.warn("media_locations must be conditioned before forward pass")
 
         lang_x = self.gated_cross_attn_layer(
             lang_x,
             self.vis_x,
             media_locations=self.media_locations,
-            attend_previous=False#self.attend_previous,
+            attend_previous=False,  # self.attend_previous,
         )
         lang_x = self.decoder_layer(
             lang_x, attention_mask=attention_mask, **decoder_layer_kwargs
@@ -79,7 +80,7 @@ class FlamingoLMMixin(nn.Module):
         vis_hidden_size,
         cross_attn_every_n_layers,
         use_media_placement_augmentation,
-        xattn_no_ffn=False
+        xattn_no_ffn=False,
     ):
         """
         Initialize Flamingo by adding a new gated cross attn to the decoder. Store the media token id for computing the media locations.
@@ -87,11 +88,15 @@ class FlamingoLMMixin(nn.Module):
 
         self.gated_cross_attn_layers = nn.ModuleList(
             [
-                GatedCrossAttentionBlock(
-                    dim=self.config.hidden_size, dim_visual=vis_hidden_size, xattn_no_ffn=xattn_no_ffn
+                (
+                    GatedCrossAttentionBlock(
+                        dim=self.config.hidden_size,
+                        dim_visual=vis_hidden_size,
+                        xattn_no_ffn=xattn_no_ffn,
+                    )
+                    if (layer_idx + 1) % cross_attn_every_n_layers == 0
+                    else None
                 )
-                if (layer_idx + 1) % cross_attn_every_n_layers == 0
-                else None
                 for layer_idx, _ in enumerate(self._get_decoder_layers())
             ]
         )

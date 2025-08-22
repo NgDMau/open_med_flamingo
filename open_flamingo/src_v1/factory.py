@@ -15,6 +15,7 @@ from peft import (
     # set_peft_model_state_dict,
 )
 
+
 def create_model_and_transforms(
     clip_vision_encoder_path: str,
     clip_vision_encoder_pretrained: str,
@@ -23,8 +24,8 @@ def create_model_and_transforms(
     cross_attn_every_n_layers: int = 1,
     use_local_files: bool = False,
     decoder_layers_attr_name: str = None,
-    lora_weights = None,
-    unfreeze_vision_encoder = False,
+    lora_weights=None,
+    unfreeze_vision_encoder=False,
     xattn_no_ffn=False,
     perceiver_depth=6,
     **flamingo_kwargs,
@@ -52,8 +53,9 @@ def create_model_and_transforms(
     # set the vision encoder to output the visual features
     vision_encoder.visual.output_tokens = True
 
-    if 'llama' in tokenizer_path:
+    if "llama" in tokenizer_path:
         from transformers import LlamaTokenizer
+
         text_tokenizer = LlamaTokenizer.from_pretrained(tokenizer_path, use_fast=False)
     else:
         text_tokenizer = AutoTokenizer.from_pretrained(
@@ -71,7 +73,8 @@ def create_model_and_transforms(
     text_tokenizer.bos_token_id = 1
     text_tokenizer.eos_token_id = 2
     lang_encoder = AutoModelForCausalLM.from_pretrained(
-        lang_encoder_path, local_files_only=use_local_files, 
+        lang_encoder_path,
+        local_files_only=use_local_files,
         # load_in_4bit=load_in_4bit
     )
     extend_instance(lang_encoder, FlamingoLMMixin)
@@ -84,7 +87,7 @@ def create_model_and_transforms(
     # if instruction_encoder is not None:
     #     instruction_encoder = sentence_transformers.SentenceTransformer(instruction_encoder)
 
-    print(f'unfreeze_vision_encoder: {unfreeze_vision_encoder}')
+    print(f"unfreeze_vision_encoder: {unfreeze_vision_encoder}")
     model = Flamingo(
         vision_encoder,
         lang_encoder,
@@ -106,14 +109,11 @@ def create_model_and_transforms(
     assert sum(p.numel() for p in model.parameters() if p.requires_grad) == 0
 
     if lora_weights is not None:
-        lang_encoder = PeftModel.from_pretrained(
-            model.lang_encoder,
-            lora_weights
-        )
+        lang_encoder = PeftModel.from_pretrained(model.lang_encoder, lora_weights)
         for name, params in model.named_parameters():
-            if 'lora' in name:
+            if "lora" in name:
                 params.requires_grad_(True)
-    
+
     # if instruction_encoder is not None:
     #     model.instruction_embedding_to_preciver_latents.requires_grad_(True)
 
