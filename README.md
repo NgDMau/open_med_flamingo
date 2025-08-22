@@ -71,7 +71,13 @@ conda env create -f environment.yml
 
 Note: please avoid using environment with pip installed `open-flamingo` package to avoid import conflicts.
 
-Additionally, as in our method LoRA adapter need to be inserted to the language model, a [PEFT](https://github.com/huggingface/peft) installation is required. Tensorboard should also be installed for logging.
+Install packages into newly created env:
+```bash
+conda activate instruct_flamingo
+pip install -r requirements.txt
+```
+
+<!-- Additionally, as in our method LoRA adapter need to be inserted to the language model, a [PEFT](https://github.com/huggingface/peft) installation is required. Tensorboard should also be installed for logging.
 
 ```bash
 pip install peft, tensorboard
@@ -81,7 +87,7 @@ The following packages are the dependencies of hosting API and gradio web demo:
 
 ```bash
 pip install gradio, uvicorn, fastapi, pydantic
-```
+``` -->
 
 Replace `hf_prefixlm_converter` with adapted one:
 ```bash
