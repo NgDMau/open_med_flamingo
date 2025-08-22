@@ -65,7 +65,6 @@ parser.add_argument("--num_samples", type=int, default=1)
 parser.add_argument("--seed", type=int, default=42)
 
 
-
 def add_image_dir(str, img_dir):
     if img_dir == "":
         return str
@@ -114,7 +113,9 @@ def save_summary(results, args, logger):
         references, hypotheses = preprocess_text(references, hypotheses)
 
         logger.info(f"Calculating metrics for {dataset_name}...")
-        accuracy = calculate_accuracy(references=references, hypotheses=hypotheses, loose=True)
+        accuracy = calculate_accuracy(
+            references=references, hypotheses=hypotheses, loose=True
+        )
 
         target_lengths = [len(target.split()) for target in references]
         prediction_lengths = [len(prediction.split()) for prediction in hypotheses]
@@ -138,7 +139,9 @@ def save_summary(results, args, logger):
         f.write(header)
 
 
-def preprocess_text(references: List[str], hypotheses: List[str]) -> Tuple[List[str], List[str]]:
+def preprocess_text(
+    references: List[str], hypotheses: List[str]
+) -> Tuple[List[str], List[str]]:
     """
     Preprocesses lists of reference and hypothesis strings for evaluation.
 
@@ -159,7 +162,7 @@ def preprocess_text(references: List[str], hypotheses: List[str]) -> Tuple[List[
         # 1. Lowercase and strip whitespace
         processed_ref = ref.lower().strip()
         # 2. Replace internal spaces with a hyphen
-        processed_ref = re.sub(r'\s+', '-', processed_ref)
+        processed_ref = re.sub(r"\s+", "-", processed_ref)
         processed_references.append(processed_ref)
 
     processed_hypotheses = []
@@ -167,12 +170,15 @@ def preprocess_text(references: List[str], hypotheses: List[str]) -> Tuple[List[
         # 1. Lowercase and strip whitespace
         processed_hyp = hyp.lower().strip()
         # 2. Replace internal spaces with a hyphen
-        processed_hyp = re.sub(r'\s+', '-', processed_hyp)
+        processed_hyp = re.sub(r"\s+", "-", processed_hyp)
         processed_hypotheses.append(processed_hyp)
 
     return processed_references, processed_hypotheses
 
-def calculate_accuracy(references: List[str], hypotheses: List[str], loose=False) -> float:
+
+def calculate_accuracy(
+    references: List[str], hypotheses: List[str], loose=False
+) -> float:
     """
     Calculates the accuracy (exact match) score between two lists of strings.
 
@@ -195,7 +201,7 @@ def calculate_accuracy(references: List[str], hypotheses: List[str], loose=False
     for ref, hyp in zip(references, hypotheses):
         if ref == hyp:
             correct_predictions += 1
-        
+
         elif loose:
             # Check if there is pattern <Final Answer: Some-thing> inside hyp
             # For example: "Final Answer: Mild-Dementia"
@@ -221,9 +227,9 @@ def extract_answer_regex(text: str) -> str:
     # This pattern looks for "Final Answer:", followed by optional whitespace,
     # and then captures a sequence of word characters and hyphens.
     match = re.search(r"Final Answer:\s*([\w-]+)", text)
-    
+
     if match:
-        return match.group(1) # Return the first captured group
+        return match.group(1)  # Return the first captured group
     return ""
 
 
@@ -327,7 +333,9 @@ def main():
         all_exist = True
         for img_path in img_paths:
             if not os.path.exists(img_path):
-                logger.warning(f"Image path does not exist: {img_path}. Skipping index {index}.")
+                logger.warning(
+                    f"Image path does not exist: {img_path}. Skipping index {index}."
+                )
                 all_exist = False
                 break
         if not all_exist:
@@ -353,7 +361,9 @@ def main():
                 no_repeat_ngram_size=args.no_repeat_ngram_size,
                 response_split="### Assistant:",
             )
-            for i, (prediction, sample, prompt, idx) in enumerate(zip(predictions, batch_samples, batch_prompts, batch_indices)):
+            for i, (prediction, sample, prompt, idx) in enumerate(
+                zip(predictions, batch_samples, batch_prompts, batch_indices)
+            ):
                 dataset_name = dataset.configs[sample["dataset_idx"]]["dataset_name"]
                 prompt_clean = prompt.replace("<|endofchunk|>", "")
                 dataset_results[dataset_name].append(

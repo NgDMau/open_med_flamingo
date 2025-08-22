@@ -2,9 +2,9 @@ import json, requests
 
 url = "http://0.0.0.0:1234/clever_flamingo"
 
-instruction = "Can you give some details in the picture? Please be correct, don't say something you are not sure"
+# instruction = "Can you give some details in the picture? Please be correct, don't say something you are not sure"
 # instruction = "What is capital of France?"
-# instruction = "\n\n+ Reasoning:\n- Step 1: Recognize the disease area\n- Answer: ```json\n[{\"bbox_2d\": [37, 242, 122, 405], \"label\": \"disease area\"}, {\"bbox_2d\": [113, 244, 199, 400], \"label\": \"disease area\"}]\n```\n- Step 2: How would you specify the visible traits of this lesion?\n- Answer: Substantial sulcal widening of posterior cingulate and parieto-occipital sulci, substantial gyral atrophy.\n- Step 3: What is the stage of the lesion?\n- Answer: Koedam = 2\n\n+ Final Answer:"
+# instruction = "\n\n+ Reasoning:\n- Step 1: Recognize the disease area\n- Answer: ```json\n[{\"bbox_2d\": [37, 242, 122, 405], \"label\": \"disease area\"}, {\"bbox_2d\": [113, 244, 199, 400], \"label\": \"disease area\"}]\n```\n- Step 2: How would you specify the visible traits of this lesion?\n- Answer: Substantial sulcal widening of posterior cingulate and parieto-occipital sulci, substantial gyral atrophy.\n- Step 3: What is the stage of the lesion?\n- Answer: Koedam = 2\n\n+ Final Answer: "
 instruction = """What's the clinical severity of this disease state?"""
 content_lst = {
     # remenber to add '<image>' to your instruction to indecate the location of image(s)
