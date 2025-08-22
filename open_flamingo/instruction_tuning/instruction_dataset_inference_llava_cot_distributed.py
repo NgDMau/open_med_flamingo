@@ -50,6 +50,7 @@ def add_image_dir(str, img_dir):
             index += 1
         return str
 
+
 def save_results(results, args, logger):
     if not os.path.exists(args.results_dir):
         logger.info(f"Creating results directory at {args.results_dir}")
@@ -64,6 +65,7 @@ def save_results(results, args, logger):
             json.dump(dataset_results, f, indent=4)
     # with open(os.path.join(args.results_dir, f"all_results.json"), "w") as f:
     #     json.dump(all_results, f, indent=4)
+
 
 def save_summary(results, args, logger):
     summary = defaultdict(dict)
@@ -89,10 +91,18 @@ def save_summary(results, args, logger):
 
         summary[dataset_name] = {
             "accuracy": accuracy,
-            "avg_target_length": sum(target_lengths) / len(target_lengths) if target_lengths else 0,
-            "avg_prediction_length": sum(prediction_lengths) / len(prediction_lengths) if prediction_lengths else 0,
+            "avg_target_length": (
+                sum(target_lengths) / len(target_lengths) if target_lengths else 0
+            ),
+            "avg_prediction_length": (
+                sum(prediction_lengths) / len(prediction_lengths)
+                if prediction_lengths
+                else 0
+            ),
             "exact_matches": exact_matches,
-            "match_percentage": (exact_matches / len(references) * 100) if references else 0,
+            "match_percentage": (
+                (exact_matches / len(references) * 100) if references else 0
+            ),
             "total_samples": len(references),
         }
 
@@ -100,6 +110,7 @@ def save_summary(results, args, logger):
 
     with open(os.path.join(args.results_dir, "summary.md"), "w") as f:
         f.write(header)
+
 
 def preprocess_text(
     references: List[str], hypotheses: List[str]
@@ -136,6 +147,7 @@ def preprocess_text(
         processed_hypotheses.append(processed_hyp)
 
     return processed_references, processed_hypotheses
+
 
 def calculate_accuracy(
     references: List[str], hypotheses: List[str], loose=False
@@ -201,7 +213,7 @@ def main():
 
     logging.basicConfig(
         level=logging.INFO if rank == 0 else logging.WARNING,
-        format=f"%(asctime)s [%(levelname)s] [RANK {rank}] %(message)s"
+        format=f"%(asctime)s [%(levelname)s] [RANK {rank}] %(message)s",
     )
     logger = logging.getLogger(__name__)
 
@@ -246,7 +258,7 @@ def main():
         clip_vision_encoder_pretrained=args.vision_encoder_pretrained,
         cross_attn_every_n_layers=args.cross_attn_every_n_layers,
         v1=args.v1,
-        device=f"cuda:{local_rank}"
+        device=f"cuda:{local_rank}",
     )
 
     # ------------------------------------
