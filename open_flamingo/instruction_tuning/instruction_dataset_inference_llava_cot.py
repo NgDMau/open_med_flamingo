@@ -314,45 +314,75 @@ def main():
     dataset_names = []
     dataset_results = defaultdict(list)
 
+    batch_size = 8  # You can adjust this value as needed
+    batch_prompts = []
+    batch_img_paths = []
+    batch_samples = []
+    batch_indices = []
+
     for index, item in enumerate(tqdm(dataset)):
         img_paths, text, instruction_str, sample = item
 
-        prediction, full_text = inferencer(
-            prompt=instruction_str,
-            images=img_paths,
-            max_new_token=args.max_new_token,
-            num_beams=args.num_beams,
-            temperature=args.temperature,
-            top_k=args.top_k,
-            top_p=args.top_p,
-            do_sample=args.do_sample,
-            length_penalty=args.length_penalty,
-            no_repeat_ngram_size=args.no_repeat_ngram_size,
-            response_split="### Assistant:",
-        )
+        # Check if all image paths exist for this sample
+        all_exist = True
+        for img_path in img_paths:
+            if not os.path.exists(img_path):
+                logger.warning(f"Image path does not exist: {img_path}. Skipping index {index}.")
+                all_exist = False
+                break
+        if not all_exist:
+            continue
 
-        dataset_name = dataset.configs[sample["dataset_idx"]]["dataset_name"]
-        instruction_str = instruction_str.replace("<|endofchunk|>", "")
-        dataset_results[dataset_name].append(
-            {
-                "input": add_image_dir(sample["input"], sample["img_dir"]),
-                "output": prediction[0],
-                "target": sample["output"],
-                "prompt": instruction_str,
-            }
-        )
-        dataset_names.append(dataset_name)
-        print("-" * 64)
-        print(
-            f'[dataset]:   {dataset_name} ({sample["dataset_idx"] + 1}/{len(dataset.configs)})'
-        )
-        print(f"[images]:    {img_paths}")
-        print(f"[prompt]:    {instruction_str}")
-        print(f"\n*** PREDICTION ***\n{prediction[0]}")
-        print(f'\n*** TARGET ***\n{sample["output"]}')
+        batch_prompts.append(instruction_str)
+        batch_img_paths.append(img_paths)
+        batch_samples.append(sample)
+        batch_indices.append(index)
 
-        if index % 10 == 0:
-            save_results(dataset_results, args, logger)
+        # If batch is full or last sample, run inference
+        if len(batch_prompts) == batch_size or index == len(dataset) - 1:
+            predictions, full_texts = inferencer(
+                prompt=batch_prompts,
+                images=batch_img_paths,
+                max_new_token=args.max_new_token,
+                num_beams=args.num_beams,
+                temperature=args.temperature,
+                top_k=args.top_k,
+                top_p=args.top_p,
+                do_sample=args.do_sample,
+                length_penalty=args.length_penalty,
+                no_repeat_ngram_size=args.no_repeat_ngram_size,
+                response_split="### Assistant:",
+            )
+            for i, (prediction, sample, prompt, idx) in enumerate(zip(predictions, batch_samples, batch_prompts, batch_indices)):
+                dataset_name = dataset.configs[sample["dataset_idx"]]["dataset_name"]
+                prompt_clean = prompt.replace("<|endofchunk|>", "")
+                dataset_results[dataset_name].append(
+                    {
+                        "input": add_image_dir(sample["input"], sample["img_dir"]),
+                        "output": prediction,
+                        "target": sample["output"],
+                        "prompt": prompt_clean,
+                    }
+                )
+                dataset_names.append(dataset_name)
+                print("-" * 64)
+                print(
+                    f'[dataset]:   {dataset_name} ({sample["dataset_idx"] + 1}/{len(dataset.configs)})'
+                )
+                print(f"[images]:    {batch_img_paths[i]}")
+                print(f"[prompt]:    {prompt_clean}")
+                print(f"\n*** PREDICTION ***\n{prediction}")
+                print(f'\n*** TARGET ***\n{sample["output"]}')
+
+            # Save results every 10 samples (not every batch)
+            if index % 10 == 0:
+                save_results(dataset_results, args, logger)
+
+            # Reset batch
+            batch_prompts = []
+            batch_img_paths = []
+            batch_samples = []
+            batch_indices = []
 
     save_results(dataset_results, args, logger)
     save_summary(dataset_results, args, logger)
