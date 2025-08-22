@@ -26,16 +26,28 @@ class Response(BaseModel):
 # log_file = '/cpfs/user/chendelong/open_flamingo_v2/serving/api_log.json'
 
 # Clever Flamingo V2 (MPT-7B)
+# inferencer = Inferencer(
+#     lm_path="/cpfs/user/chendelong/cache/mpt-7b",
+#     checkpoint_paths='runs/clever_flamingo_v2/0813_9b-2k_context-80G-lora[lm]+xattn+perciver-countinue2/clever_flamingo_v2_9b_0818.pt',
+#     clip_vision_encoder_path="ViT-L-14-336",
+#     clip_vision_encoder_pretrained='openai',
+#     tuning_config='open_flamingo/instruction_tuning/tuning_config/clever_flamingo_v2.json',
+#     cross_attn_every_n_layers=4,
+#     v1=False
+#     )
+
 inferencer = Inferencer(
-    lm_path="/cpfs/user/chendelong/cache/mpt-7b",
-    checkpoint_paths='runs/clever_flamingo_v2/0813_9b-2k_context-80G-lora[lm]+xattn+perciver-countinue2/clever_flamingo_v2_9b_0818.pt',
+    lm_path="anas-awadalla/mpt-7b",
+    # checkpoint_paths='/app/baseline_models/instruct_flamingo/runs/0821-clever_flamingo_v2_3b-2k_context-40G-resume-from-mpt7b-checkpoint/checkpoint_10.pt',
+    checkpoint_paths="/app/baseline_models/instruct_flamingo/runs/0821-clever_flamingo_v2_3b-2k_context-40G-resume-from-mpt7b-checkpoint-03/checkpoint_15.pt",
     clip_vision_encoder_path="ViT-L-14-336",
     clip_vision_encoder_pretrained='openai',
-    tuning_config='open_flamingo/instruction_tuning/tuning_config/clever_flamingo_v2.json',
+    tuning_config='/app/baseline_models/instruct_flamingo/open_flamingo/instruction_tuning/tuning_config/lora[lm+xqttn]+perceiver.json',
     cross_attn_every_n_layers=4,
     v1=False
     )
-log_file = '/cpfs/user/chendelong/open_flamingo_v2/serving/api_log_v2.json'
+
+log_file = '/app/baseline_models/instruct_flamingo/serving/api_log_v2.json'
 
 @app.post("/clever_flamingo",response_model=Response)        
 async def clever_flamingo(request: Input):

@@ -140,6 +140,8 @@ class InstructionDataset(Dataset):
         with open(config_json_path, "r") as file:
             self.configs = json.load(file)
 
+        # print("\n\n\nLoaded dataset configs:", self.configs)
+
         if 'json_path' not in self.configs[0].keys() and 'input' in self.configs[0].keys():
             # this is not a config file, instead it is the raw instruction data json
             # then assume that image paths are absolute paths

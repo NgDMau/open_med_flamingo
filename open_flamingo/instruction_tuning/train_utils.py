@@ -260,31 +260,31 @@ def train_one_epoch(
         # Log loss to console
         if ((num_steps + 1) % args.logging_steps == 0) and args.rank == 0:
             
-            input_tokens = tokenizer.convert_ids_to_tokens(input_ids[0].squeeze().tolist())
-            input_text = tokenizer.convert_tokens_to_string(input_tokens)
-            print('[input_ids]')
-            # print(input_ids[0])
-            print(input_text)
-            print('-'*128)
+            # input_tokens = tokenizer.convert_ids_to_tokens(input_ids[0].squeeze().tolist())
+            # input_text = tokenizer.convert_tokens_to_string(input_tokens)
+            # print('[input_ids]')
+            # # print(input_ids[0])
+            # print(input_text)
+            # print('-'*128)
             
-            labels_ = copy.deepcopy(labels)
-            labels_[labels == -100] = 1
-            mask_token = tokenizer.convert_tokens_to_string(tokenizer.convert_ids_to_tokens([1]))
-            label_tokens = tokenizer.convert_ids_to_tokens(labels_[0].squeeze().tolist())
-            label_text = tokenizer.convert_tokens_to_string(label_tokens).replace(mask_token, ' ')
-            print('[labels]')
-            # print(labels[0])
-            print(label_text)
-            print('-'*128)
+            # labels_ = copy.deepcopy(labels)
+            # labels_[labels == -100] = 1
+            # mask_token = tokenizer.convert_tokens_to_string(tokenizer.convert_ids_to_tokens([1]))
+            # label_tokens = tokenizer.convert_ids_to_tokens(labels_[0].squeeze().tolist())
+            # label_text = tokenizer.convert_tokens_to_string(label_tokens).replace(mask_token, ' ')
+            # print('[labels]')
+            # # print(labels[0])
+            # print(label_text)
+            # print('-'*128)
 
-            probs = torch.softmax(logits, dim=-1)
-            predicted_token_indexes = torch.argmax(probs, dim=-1)
-            predicted_token_indexes[labels == -100] = 1
-            predicted_tokens = tokenizer.convert_ids_to_tokens(predicted_token_indexes[0].squeeze().tolist())
-            predicted_text = tokenizer.convert_tokens_to_string(predicted_tokens).replace(mask_token, ' ')
-            print('[predicted]')
-            # print(predicted_token_indexes[0])
-            print(predicted_text)
+            # probs = torch.softmax(logits, dim=-1)
+            # predicted_token_indexes = torch.argmax(probs, dim=-1)
+            # predicted_token_indexes[labels == -100] = 1
+            # predicted_tokens = tokenizer.convert_ids_to_tokens(predicted_token_indexes[0].squeeze().tolist())
+            # predicted_text = tokenizer.convert_tokens_to_string(predicted_tokens).replace(mask_token, ' ')
+            # print('[predicted]')
+            # # print(predicted_token_indexes[0])
+            # print(predicted_text)
             logger.info(
                 f"Step {num_steps+1}/{num_batches_per_epoch} of epoch {epoch+1}/{args.num_epochs} complete. Loss: {loss.item():.7f}. LR: {optimizer.param_groups[0]['lr']:.7f}"
             )          
