@@ -83,6 +83,11 @@ The following packages are the dependencies of hosting API and gradio web demo:
 pip install gradio, uvicorn, fastapi, pydantic
 ```
 
+Replace `hf_prefixlm_converter` with adapted one:
+```bash
+mv -f special_files/hf_prefixlm_converter.py /.cache/modules/transformers_modules/anas-awadalla/mpt-7b/SOME_HARSH_STRING/hf_prefixlm_converter.py
+```
+
 ### 2. Download Pretrained Weights
 
 - [MPT-7B](https://huggingface.co/anas-awadalla/mpt-7b)
