@@ -29,6 +29,38 @@ parser.add_argument(
 )
 parser.add_argument("--v1", action="store_true", default=False)
 
+# Language Generation Configs - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+parser.add_argument("--max_new_token", type=int, default=128)
+parser.add_argument("--num_beams", type=int, default=1)
+parser.add_argument("--temperature", type=float, default=1)
+parser.add_argument("--top_k", type=float, default=20)
+parser.add_argument("--top_p", type=float, default=1)
+parser.add_argument("--do_sample", type=bool, default=True)
+parser.add_argument("--no_repeat_ngram_size", type=int, default=3)
+parser.add_argument("--length_penalty", type=float, default=1)
+parser.add_argument("--max_length", type=int, default=1024)
+
+# Dataset Configs - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+parser.add_argument(
+    "--results_dir", type=str, default=None, help="JSON file to save results"
+)
+parser.add_argument(
+    "--instruction_path",
+    type=str,
+    help="Path to the instruction dataset directory.",
+    default=None,
+)
+parser.add_argument(
+    "--img_dir",
+    type=str,
+    help="Path to the instruction dataset images.",
+    default=None,
+)
+parser.add_argument("--instruction_prompt_templete", type=str, default="guanaco")
+parser.add_argument("--dataset_sampling_mode", type=str, default="ratio")
+parser.add_argument("--num_samples", type=int, default=1)
+parser.add_argument("--seed", type=int, default=42)
+
 
 def add_image_dir(str, img_dir):
     if img_dir == "":
@@ -204,11 +236,14 @@ def extract_answer_regex(text: str) -> str:
 
 def main():
     # Distributed initialization
+    print("Distribution Initialization...")
+
     dist.init_process_group(backend="nccl")
     local_rank = int(os.environ.get("LOCAL_RANK", 0))
     world_size = dist.get_world_size()
     rank = dist.get_rank()
 
+    print("Setting rank...")
     torch.cuda.set_device(local_rank)
 
     logging.basicConfig(
@@ -246,9 +281,13 @@ def main():
             logger.info("\t{:<30}\t{}".format(key + ":", value))
         logger.info("-" * 100)
 
+    print("Initialization Complete")
+
     # ------------------------------------
     # Load Model and Checkpoints
     # ------------------------------------
+
+    print("Load model and checkpoint...")
 
     inferencer = Inferencer(
         lm_path=args.lm_path,
