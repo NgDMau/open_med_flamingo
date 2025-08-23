@@ -19,7 +19,7 @@ class Inferencer:
         clip_vision_encoder_pretrained="openai",
         cross_attn_every_n_layers=4,
         v1=False,
-        device="cuda:0"
+        device="cuda:0",
     ):
         self.v1 = v1
         self.device = device
@@ -68,7 +68,7 @@ class Inferencer:
 
         # print(get_params_count_summary(model))
         model.half()
-        model = model.to(self.device) # Move model to specific GPU
+        model = model.to(self.device)  # Move model to specific GPU
         model.eval()
         tokenizer.padding_side = "left"
         tokenizer.add_eos_token = False

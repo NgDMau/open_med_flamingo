@@ -93,7 +93,9 @@ def save_results(results, args, logger, rank):
             f"Saving results for {dataset_name} to file {args.results_dir}/{dataset_name}.json"
         )
         all_results.extend(dataset_results)
-        with open(os.path.join(args.results_dir, f"{dataset_name}_rank{rank}.json"), "w") as f:
+        with open(
+            os.path.join(args.results_dir, f"{dataset_name}_rank{rank}.json"), "w"
+        ) as f:
             json.dump(dataset_results, f, indent=4)
     # with open(os.path.join(args.results_dir, f"all_results.json"), "w") as f:
     #     json.dump(all_results, f, indent=4)
@@ -244,9 +246,7 @@ def main():
     rank = dist.get_rank()
 
     print("World Size:", world_size)
-    print(
-        f"Local Rank: {local_rank}, Rank: {rank}"
-    )
+    print(f"Local Rank: {local_rank}, Rank: {rank}")
 
     print("Setting rank...")
     torch.cuda.set_device(local_rank)
@@ -423,7 +423,9 @@ def main():
                         merged_results[dataset_name].extend(json.load(f))
         # Save merged results
         for dataset_name, results in merged_results.items():
-            with open(os.path.join(args.results_dir, f"{dataset_name}_all.json"), "w") as f:
+            with open(
+                os.path.join(args.results_dir, f"{dataset_name}_all.json"), "w"
+            ) as f:
                 json.dump(results, f, indent=4)
         # Compute summary on merged results
         save_summary(merged_results, args, logger)
