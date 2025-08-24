@@ -240,7 +240,7 @@ def main():
     # Distributed initialization
     print("Distribution Initialization...")
 
-    dist.init_process_group(backend="nccl", world_size=4)
+    dist.init_process_group(backend="nccl")
     local_rank = int(os.environ.get("LOCAL_RANK", 0))
     world_size = dist.get_world_size()
     rank = dist.get_rank()
@@ -385,15 +385,15 @@ def main():
                     }
                 )
                 dataset_names.append(dataset_name)
-                if rank == 0:
-                    print("-" * 64)
-                    print(
-                        f'[dataset]:   {dataset_name} ({sample["dataset_idx"] + 1}/{len(dataset.configs)})'
-                    )
-                    print(f"[images]:    {batch_img_paths[i]}")
-                    print(f"[prompt]:    {prompt_clean}")
-                    print(f"\n*** PREDICTION ***\n{prediction}")
-                    print(f'\n*** TARGET ***\n{sample["output"]}')
+                # if rank == 0:
+                #     print("-" * 64)
+                #     print(
+                #         f'[dataset]:   {dataset_name} ({sample["dataset_idx"] + 1}/{len(dataset.configs)})'
+                #     )
+                #     print(f"[images]:    {batch_img_paths[i]}")
+                #     print(f"[prompt]:    {prompt_clean}")
+                #     print(f"\n*** PREDICTION ***\n{prediction}")
+                #     print(f'\n*** TARGET ***\n{sample["output"]}')
 
             # Save results every 10 samples (not every batch)
             if count % 10 == 0:

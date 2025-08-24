@@ -1,5 +1,6 @@
 export HF_HOME="/app/.cache/"
-export NCCL_DEBUG=INFO
+# export NCCL_DEBUG=INFO
+export NCCL_NVLS_ENABLE=0
 
 echo 'activating virtual environment'
 source ~/.bashrc
@@ -9,7 +10,7 @@ which python
 
 # --checkpoint_paths and --instruction_path need to be modified
 
-CUDA_VISIBLE_DEVICES='0,1,2,3,4,5,6,7' WORLD_SIZE=4 MASTER_ADDR='localhost' MASTER_PORT=29502 torchrun --nproc_per_node=4 open_flamingo/instruction_tuning/instruction_dataset_inference_llava_cot_distributed.py \
+CUDA_VISIBLE_DEVICES='0,1,2,3,4,5,6,7' torchrun --nnodes=1 --nproc_per_node=8 --master_port=29502 open_flamingo/instruction_tuning/instruction_dataset_inference_llava_cot_distributed.py \
     --lm_path "anas-awadalla/mpt-7b" \
     --vision_encoder_path "ViT-L-14-336" \
     --vision_encoder_pretrained "openai" \
