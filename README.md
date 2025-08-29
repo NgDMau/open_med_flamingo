@@ -103,6 +103,21 @@ mv -f special_files/hf_prefixlm_converter.py /.cache/modules/transformers_module
 
 ## Model Inference🎈
 
+### Customized Training and Inference Pipeline
+
+1. Training:
+Run command:
+```bash
+bash scripts/instruction_tuning_clever_flamingo_v2_3b_40g_llava_cot.sh
+```
+
+2. Inference:
+Run command:
+```bash
+bash scripts/run_eval_instruction_llava_cot.sh
+```
+
+
 ### Hosting Local API and Web Demo
 
 We suggest to host a local API then host a local [gradio](https://www.gradio.app/) web demo, such that the front-end and back-end is seperated (easier to debug, since re-loading LLM is slow), and the local API could make model inference and evaluations much convinient. You can start an API server via the following command. Please see `api.py` and make necessary changes (e.g., model checkpoint caching path).
