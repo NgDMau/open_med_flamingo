@@ -114,8 +114,10 @@ bash scripts/instruction_tuning_clever_flamingo_v2_3b_40g_llava_cot.sh
 2. Inference:
 Run command:
 ```bash
-bash scripts/run_eval_instruction_llava_cot.sh
+# Make sure env is activated by running `conda activate instruct_flamingo`
+bash scripts/run_inference_llava_cot.sh
 ```
+Inference result will be saved at location `predictions_validation/`
 
 
 ### Hosting Local API and Web Demo
