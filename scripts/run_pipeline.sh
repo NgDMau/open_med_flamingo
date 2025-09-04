@@ -29,7 +29,7 @@ BATCH_SIZE=256
 LR=1e-4
 EPOCHS=20
 LR_SCHEDULER="consine"
-CHECKPOINT_EPOCH=20 # The epoch number to use for inference and evaluation
+CHECKPOINT_EPOCH=19 # The epoch number to use for inference and evaluation
 WARMUP_STEPS=10
 # ------------------------------------------------------------------------------
 
@@ -129,7 +129,6 @@ if [ "$train_flag" = true ]; then
     echo "Training step completed."
     echo ""
 fi
-
 
 # ==============================================================================
 # --- Step 2: Inference ---
