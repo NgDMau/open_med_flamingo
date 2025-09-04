@@ -110,6 +110,11 @@ Run command:
 ```bash
 bash scripts/instruction_tuning_clever_flamingo_v2_3b_40g_llava_cot.sh
 ```
+Check tensorboard during training:
+```bash
+cd runs/
+tensorboard --logdir folder/that/contains/tensorboard_dir
+```
 
 2. Inference:
 Run command:
