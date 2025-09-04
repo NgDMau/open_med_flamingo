@@ -26,10 +26,12 @@
 # ==============================================================================
 # Training Parameters
 BATCH_SIZE=256
-LR=2e-4
-EPOCHS=30
+LR=1e-4
+EPOCHS=20
 LR_SCHEDULER="consine"
-CHECKPOINT_EPOCH=15 # The epoch number to use for inference and evaluation
+CHECKPOINT_EPOCH=20 # The epoch number to use for inference and evaluation
+WARMUP_STEPS=10
+# ------------------------------------------------------------------------------
 
 # Path Configuration
 INSTRUCT_FLAMINGO_ROOT="/app/baseline_models/instruct_flamingo"
@@ -42,7 +44,7 @@ RESULTS_DIR="predictions_validation"
 
 # Derived Variables (Do not edit)
 RUN_DIR="${INSTRUCT_FLAMINGO_ROOT}/runs"
-RUN_NAME="0829-clever_flamingo_v2_3b-batch${BATCH_SIZE}-lr${LR}-epochs${EPOCHS}-lrsched${LR_SCHEDULER}-resume-from-mpt7b"
+RUN_NAME="0904-clever_flamingo_v2_3b-batch${BATCH_SIZE}-lr${LR}-epochs${EPOCHS}-lrsched${LR_SCHEDULER}-resume-from-mpt7b"
 CHECKPOINT_PATH="${INSTRUCT_FLAMINGO_ROOT}/${RUN_NAME}/checkpoint_${CHECKPOINT_EPOCH}.pt"
 INFERENCE_RESULT_FILE="${INSTRUCT_FLAMINGO_ROOT}/${RESULTS_DIR}/${RUN_NAME}-checkpoint_${CHECKPOINT_EPOCH}/eval_dataset_config_-1/llava-mri-cot-1k-test_all.json"
 # ------------------------------------------------------------------------------
@@ -98,7 +100,7 @@ if [ "$train_flag" = true ]; then
     CUDA_VISIBLE_DEVICES='0,1,2,3,4,5,6,7' torchrun --nnodes=1 --nproc_per_node=8 --master_port=29502 open_flamingo/instruction_tuning/train.py \
         --instruction_data "${DATA_PATH}/dataset_config.json" \
         --instruction_prompt_templete 'guanaco-no-prompt' \
-        --run_name "${RUN_NAME}" \
+        --run_name "${RUN_DIR}/${RUN_NAME}" \
         --seed 42 \
         --vision_encoder_path "${VISION_ENCODER}" \
         --lm_path "${LM_PATH}" \
@@ -121,7 +123,7 @@ if [ "$train_flag" = true ]; then
         --workers 8 \
         --num_epochs "${EPOCHS}" \
         --lr_scheduler "${LR_SCHEDULER}" \
-        --warmup_steps 10 \
+        --warmup_steps "${WARMUP_STEPS}" \
         --logging_steps 1
     
     echo "Training step completed."
