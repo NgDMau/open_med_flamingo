@@ -1,0 +1,27 @@
+export HF_HOME="/app/.cache/"
+# export NCCL_DEBUG=INFO
+export NCCL_NVLS_ENABLE=0
+
+echo 'activating virtual environment'
+source ~/.bashrc
+eval "$(conda shell.bash hook)"
+conda activate instruct_flamingo
+which python
+
+# --checkpoint_paths and --instruction_path need to be modified
+
+CUDA_VISIBLE_DEVICES='0,1,2,3,4,5,6,7' torchrun --nnodes=1 --nproc_per_node=8 --master_port=29502 open_flamingo/instruction_tuning/instruction_dataset_inference_llava_cot_distributed.py \
+    --lm_path "anas-awadalla/mpt-7b" \
+    --vision_encoder_path "ViT-L-14-336" \
+    --vision_encoder_pretrained "openai" \
+    --tuning_config '/app/baseline_models/instruct_flamingo/open_flamingo/instruction_tuning/tuning_config/lora[lm+xqttn]+perceiver.json' \
+    --checkpoint_paths '/app/baseline_models/instruct_flamingo/runs/0829-clever_flamingo_v2_3b-batch256-lr2e-4-epochs30-lrschedconsine-resume-from-mpt7b/checkpoint_15.pt'  \
+    --cross_attn_every_n_layers 4 \
+    --instruction_path '/app/baseline_models/sample_data/llama_mri_cot/instruct_flamingo/eval_dataset_config.json' \
+    --instruction_prompt_templete 'guanaco-no-prompt' \
+    --num_samples -1 \
+    --max_new_token 512 \
+    --no_repeat_ngram_size 3 \
+    --num_beams 1 \
+    --seed 42 \
+    --results_dir "predictions_validation/"
