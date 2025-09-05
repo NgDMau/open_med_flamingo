@@ -83,7 +83,7 @@ def add_image_dir(str, img_dir):
         return str
 
 
-def save_results(results, args, logger):
+def save_results(results, args, logger, rank):
     if not os.path.exists(args.results_dir):
         logger.info(f"Creating results directory at {args.results_dir}")
         os.makedirs(args.results_dir)
@@ -93,7 +93,9 @@ def save_results(results, args, logger):
             f"Saving results for {dataset_name} to file {args.results_dir}/{dataset_name}.json"
         )
         all_results.extend(dataset_results)
-        with open(os.path.join(args.results_dir, f"{dataset_name}.json"), "w") as f:
+        with open(
+            os.path.join(args.results_dir, f"{dataset_name}_rank{rank}.json"), "w"
+        ) as f:
             json.dump(dataset_results, f, indent=4)
     # with open(os.path.join(args.results_dir, f"all_results.json"), "w") as f:
     #     json.dump(all_results, f, indent=4)
@@ -243,6 +245,9 @@ def main():
     world_size = dist.get_world_size()
     rank = dist.get_rank()
 
+    print("World Size:", world_size)
+    print(f"Local Rank: {local_rank}, Rank: {rank}")
+
     print("Setting rank...")
     torch.cuda.set_device(local_rank)
 
@@ -380,19 +385,19 @@ def main():
                     }
                 )
                 dataset_names.append(dataset_name)
-                if rank == 0:
-                    print("-" * 64)
-                    print(
-                        f'[dataset]:   {dataset_name} ({sample["dataset_idx"] + 1}/{len(dataset.configs)})'
-                    )
-                    print(f"[images]:    {batch_img_paths[i]}")
-                    print(f"[prompt]:    {prompt_clean}")
-                    print(f"\n*** PREDICTION ***\n{prediction}")
-                    print(f'\n*** TARGET ***\n{sample["output"]}')
+                # if rank == 0:
+                #     print("-" * 64)
+                #     print(
+                #         f'[dataset]:   {dataset_name} ({sample["dataset_idx"] + 1}/{len(dataset.configs)})'
+                #     )
+                #     print(f"[images]:    {batch_img_paths[i]}")
+                #     print(f"[prompt]:    {prompt_clean}")
+                #     print(f"\n*** PREDICTION ***\n{prediction}")
+                #     print(f'\n*** TARGET ***\n{sample["output"]}')
 
             # Save results every 10 samples (not every batch)
             if count % 10 == 0:
-                save_results(dataset_results, args, logger)
+                save_results(dataset_results, args, logger, rank)
 
             # Reset batch
             batch_prompts = []
@@ -401,13 +406,29 @@ def main():
             batch_indices = []
 
     # Save per-rank results
-    save_results(dataset_results, args, logger)
+    save_results(dataset_results, args, logger, rank)
 
     # Optionally, gather results to rank 0 for summary
     dist.barrier()
     if rank == 0:
-        # Only rank 0 writes summary (assumes all results are saved per rank)
-        save_summary(dataset_results, args, logger)
+        # Merge all per-rank result files
+        merged_results = defaultdict(list)
+        for r in range(world_size):
+            for dataset_name in dataset_results.keys():
+                result_file = os.path.join(
+                    args.results_dir, f"{dataset_name}_rank{r}.json"
+                )
+                if os.path.exists(result_file):
+                    with open(result_file, "r") as f:
+                        merged_results[dataset_name].extend(json.load(f))
+        # Save merged results
+        for dataset_name, results in merged_results.items():
+            with open(
+                os.path.join(args.results_dir, f"{dataset_name}_all.json"), "w"
+            ) as f:
+                json.dump(results, f, indent=4)
+        # Compute summary on merged results
+        save_summary(merged_results, args, logger)
 
     dist.destroy_process_group()
 
