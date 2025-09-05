@@ -26,13 +26,15 @@
 # ==============================================================================
 # Training Parameters
 BATCH_SIZE=256
-LR=2e-4
-EPOCHS=20
+LR=1e-4
+EPOCHS=50
 LR_SCHEDULER="consine"
-CHECKPOINT_EPOCH=19 # The epoch number to use for inference and evaluation
+CHECKPOINT_EPOCH=49 # The epoch number to use for inference and evaluation
 WARMUP_STEPS=10
 RUN_CODE=0905
 MODEL_SIZE="3b" # Options: "3b", "7b"
+MAX_LENGTH=512
+SEED=42
 # ------------------------------------------------------------------------------
 
 # Path Configuration
@@ -41,13 +43,14 @@ DATA_PATH="/app/baseline_models/sample_data/llama_mri_cot/instruct_flamingo"
 MODEL_PATH="/app/baseline_models/models/med-flamingo/model.pt" # A.K.A --resume_from_checkpoint
 LM_PATH="anas-awadalla/mpt-7b"
 VISION_ENCODER="ViT-L-14-336"
-TUNING_CONFIG="${INSTRUCT_FLAMINGO_ROOT}/open_flamingo/instruction_tuning/tuning_config/lora[lm+xqttn]+perceiver.json"
+TUNING_MODE="lora[lm+xqttn]+perceiver" # Options: "sft", "perceiver", "lora[lm+xqttn]+perceiver.json"
+TUNING_CONFIG="${INSTRUCT_FLAMINGO_ROOT}/open_flamingo/instruction_tuning/tuning_config/${TUNING_MODE}.json"
 RESULTS_DIR="predictions_validation"
 
 # Derived Variables (Do not edit)
 RUN_DIR="${INSTRUCT_FLAMINGO_ROOT}/runs"
-RUN_NAME="${RUN_CODE}-clever_flamingo_v2_${MODEL_SIZE}-batch${BATCH_SIZE}-lr${LR}-epochs${EPOCHS}-lrsched${LR_SCHEDULER}-resume-from-mpt7b"
-CHECKPOINT_PATH="${INSTRUCT_FLAMINGO_ROOT}/${RUN_NAME}/checkpoint_${CHECKPOINT_EPOCH}.pt"
+RUN_NAME="${RUN_CODE}-clever_flamingo_v2_${MODEL_SIZE}-${TUNING_MODE}-maxlength${MAX_LENGTH}-batch${BATCH_SIZE}-lr${LR}-epochs${EPOCHS}-lrsched${LR_SCHEDULER}-resume-from-mpt7b"
+CHECKPOINT_PATH="${RUN_DIR}/${RUN_NAME}/checkpoint_${CHECKPOINT_EPOCH}.pt"
 INFERENCE_RESULT_FILE="${INSTRUCT_FLAMINGO_ROOT}/${RESULTS_DIR}/${RUN_NAME}-checkpoint_${CHECKPOINT_EPOCH}/eval_dataset_config_-1/llava-mri-cot-1k-test_all.json"
 # ------------------------------------------------------------------------------
 
@@ -103,7 +106,7 @@ if [ "$train_flag" = true ]; then
         --instruction_data "${DATA_PATH}/dataset_config.json" \
         --instruction_prompt_templete 'guanaco-no-prompt' \
         --run_name "${RUN_DIR}/${RUN_NAME}" \
-        --seed 42 \
+        --seed "${SEED}" \
         --vision_encoder_path "${VISION_ENCODER}" \
         --lm_path "${LM_PATH}" \
         --tokenizer_path "${LM_PATH}" \
@@ -112,7 +115,7 @@ if [ "$train_flag" = true ]; then
         --tuning_config "${TUNING_CONFIG}" \
         --resume_from_checkpoint "${MODEL_PATH}" \
         --continue_training \
-        --max_length 512 \
+        --max_length "${MAX_LENGTH}" \
         --multiturn_augmentation 0 \
         --max_img 16 \
         --skip_check_overlength \
