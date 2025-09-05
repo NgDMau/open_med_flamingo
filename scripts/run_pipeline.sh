@@ -26,17 +26,19 @@
 # ==============================================================================
 # Training Parameters
 BATCH_SIZE=256
-LR=1e-4
+LR=2e-4
 EPOCHS=20
 LR_SCHEDULER="consine"
 CHECKPOINT_EPOCH=19 # The epoch number to use for inference and evaluation
 WARMUP_STEPS=10
+RUN_CODE=0905
+MODEL_SIZE="3b" # Options: "3b", "7b"
 # ------------------------------------------------------------------------------
 
 # Path Configuration
 INSTRUCT_FLAMINGO_ROOT="/app/baseline_models/instruct_flamingo"
 DATA_PATH="/app/baseline_models/sample_data/llama_mri_cot/instruct_flamingo"
-MODEL_PATH="/app/baseline_models/models/med-flamingo/model.pt"
+MODEL_PATH="/app/baseline_models/models/med-flamingo/model.pt" # A.K.A --resume_from_checkpoint
 LM_PATH="anas-awadalla/mpt-7b"
 VISION_ENCODER="ViT-L-14-336"
 TUNING_CONFIG="${INSTRUCT_FLAMINGO_ROOT}/open_flamingo/instruction_tuning/tuning_config/lora[lm+xqttn]+perceiver.json"
@@ -44,7 +46,7 @@ RESULTS_DIR="predictions_validation"
 
 # Derived Variables (Do not edit)
 RUN_DIR="${INSTRUCT_FLAMINGO_ROOT}/runs"
-RUN_NAME="0904-clever_flamingo_v2_3b-batch${BATCH_SIZE}-lr${LR}-epochs${EPOCHS}-lrsched${LR_SCHEDULER}-resume-from-mpt7b"
+RUN_NAME="${RUN_CODE}-clever_flamingo_v2_${MODEL_SIZE}-batch${BATCH_SIZE}-lr${LR}-epochs${EPOCHS}-lrsched${LR_SCHEDULER}-resume-from-mpt7b"
 CHECKPOINT_PATH="${INSTRUCT_FLAMINGO_ROOT}/${RUN_NAME}/checkpoint_${CHECKPOINT_EPOCH}.pt"
 INFERENCE_RESULT_FILE="${INSTRUCT_FLAMINGO_ROOT}/${RESULTS_DIR}/${RUN_NAME}-checkpoint_${CHECKPOINT_EPOCH}/eval_dataset_config_-1/llava-mri-cot-1k-test_all.json"
 # ------------------------------------------------------------------------------
