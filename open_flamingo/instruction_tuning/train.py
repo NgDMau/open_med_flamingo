@@ -8,6 +8,7 @@ import logging
 import numpy as np
 import torch
 import wandb
+import json
 from data import get_data
 from distributed import init_distributed_device, world_info_from_env
 from torch.nn.parallel import DistributedDataParallel as DDP
@@ -212,6 +213,11 @@ def main():
     )
 
     args = parser.parse_args()
+    
+    # Save whole args as a json file in the run_name directory
+    os.makedirs(args.run_name, exist_ok=True)
+    with open(os.path.join(args.run_name, "args.json"), "w") as f:
+        json.dump(args.__dict__, f, indent=4)
 
     # Validate args
     if args.save_checkpoints_to_wandb and not args.report_to_wandb:
