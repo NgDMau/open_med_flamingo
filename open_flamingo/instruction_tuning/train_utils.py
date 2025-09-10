@@ -19,6 +19,7 @@ from peft import LoraConfig, get_peft_model, PeftModel
 # Import the Accelerator class
 from accelerate import Accelerator
 
+
 def get_cast_dtype(precision: str):
     cast_dtype = None
     if precision == "bf16":
@@ -63,9 +64,9 @@ def train_one_epoch(
     wandb,
 ):
     # Do not wrap with accelerator.prepare() here; model, optimizer, dataloader, lr_scheduler should already be wrapped/prepared in the main script if needed.
-    
+
     # setup loaders
-    num_batches_per_epoch = len(dataloader) # dataloader.num_batches
+    num_batches_per_epoch = len(dataloader)  # dataloader.num_batches
     total_training_steps = num_batches_per_epoch * args.num_epochs
 
     autocast = get_autocast(

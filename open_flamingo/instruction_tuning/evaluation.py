@@ -85,7 +85,8 @@ import re
 import json
 import argparse
 from tqdm import tqdm
-from sklearn.metrics import f1_score # <-- ADDED: Import f1_score
+from sklearn.metrics import f1_score  # <-- ADDED: Import f1_score
+
 
 def extract_answer_regex(text: str) -> str:
     """
@@ -120,7 +121,7 @@ if __name__ == "__main__":
         output = result["output"]
         target = result["target"]
         answer = extract_answer_regex(output)
-        
+
         if answer and target:
             output = output.lower()
             answer = answer.lower().replace(" ", "")
@@ -151,31 +152,38 @@ if __name__ == "__main__":
     # --- ADDED: Calculate F1 scores ---
     # 'macro': Calculate metrics for each label, and find their unweighted mean.
     #          This does not take label imbalance into account.
-    f1_macro = f1_score(y_true, y_pred, average='macro', zero_division=0) * 100
+    f1_macro = f1_score(y_true, y_pred, average="macro", zero_division=0) * 100
 
     # 'weighted': Calculate metrics for each label, and find their average
     #             weighted by support (the number of true instances for each label).
-    f1_weighted = f1_score(y_true, y_pred, average='weighted', zero_division=0) * 100
+    f1_weighted = f1_score(y_true, y_pred, average="weighted", zero_division=0) * 100
 
     result = {
         "accuracy": accuracy,
-        "f1_macro": f1_macro,           # <-- ADDED
-        "f1_weighted": f1_weighted,     # <-- ADDED
+        "f1_macro": f1_macro,  # <-- ADDED
+        "f1_weighted": f1_weighted,  # <-- ADDED
         "correct_format": correct_format,
         "num_samples": len(data),
     }
-    
+
     # Save confusion matrix for further analysis
     from sklearn.metrics import confusion_matrix
     import numpy as np
     import matplotlib.pyplot as plt
     import seaborn as sns
+
     cm = confusion_matrix(y_true, y_pred, labels=np.unique(y_true))
     plt.figure(figsize=(10, 7))
-    sns.heatmap(cm, annot=True, fmt='d', xticklabels=np.unique(y_true), yticklabels=np.unique(y_true))
-    plt.xlabel('Predicted')
-    plt.ylabel('True')
-    plt.title('Confusion Matrix')
+    sns.heatmap(
+        cm,
+        annot=True,
+        fmt="d",
+        xticklabels=np.unique(y_true),
+        yticklabels=np.unique(y_true),
+    )
+    plt.xlabel("Predicted")
+    plt.ylabel("True")
+    plt.title("Confusion Matrix")
     plt.savefig(f"{inference_folder}/confusion_matrix.png")
     print(f"Confusion matrix saved to {inference_folder}/confusion_matrix.png")
 
@@ -183,6 +191,6 @@ if __name__ == "__main__":
         json.dump(result, f, indent=4)
 
     print(f"Accuracy: {accuracy:.2f}%")
-    print(f"F1 Score (Macro): {f1_macro:.2f}%")          # <-- ADDED
-    print(f"F1 Score (Weighted): {f1_weighted:.2f}%")    # <-- ADDED
+    print(f"F1 Score (Macro): {f1_macro:.2f}%")  # <-- ADDED
+    print(f"F1 Score (Weighted): {f1_weighted:.2f}%")  # <-- ADDED
     print(f"Correct Format: {correct_format:.2f}%")

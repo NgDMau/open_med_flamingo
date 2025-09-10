@@ -213,7 +213,7 @@ def main():
     )
 
     args = parser.parse_args()
-    
+
     # Save whole args as a json file in the run_name directory
     os.makedirs(args.run_name, exist_ok=True)
     with open(os.path.join(args.run_name, "args.json"), "w") as f:
@@ -271,7 +271,6 @@ def main():
         gradient_checkpointing=args.gradient_checkpointing,
         freeze_lm_embeddings=args.freeze_lm_embeddings,
     )
-
 
     # Prepare model for tuning (PEFT/LoRA etc.) before wrapping with DDP/FSDP
     model, config = prepare_model_for_tuning(model, args.tuning_config)
@@ -417,7 +416,9 @@ def main():
 
     # Now, after DDP/FSDP wrapping, load checkpoint if needed
     if args.resume_from_checkpoint is not None:
-        logger.info("Loading checkpoint after DDP/FSDP wrapping (correct order for sharded/distributed training)")
+        logger.info(
+            "Loading checkpoint after DDP/FSDP wrapping (correct order for sharded/distributed training)"
+        )
         ddp_model, checkpoint, resume_from_epoch, message = resume_from_checkpoints(
             ddp_model, args.resume_from_checkpoint, args, logger
         )
