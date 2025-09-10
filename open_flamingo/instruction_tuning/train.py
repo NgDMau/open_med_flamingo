@@ -213,7 +213,7 @@ def main():
     )
 
     args = parser.parse_args()
-    
+
     # Save whole args as a json file in the run_name directory
     os.makedirs(args.run_name, exist_ok=True)
     with open(os.path.join(args.run_name, "args.json"), "w") as f:
@@ -272,22 +272,12 @@ def main():
         freeze_lm_embeddings=args.freeze_lm_embeddings,
     )
 
-    # TODO: add comments to explain loading checkpoints twice
-    logger.info("loading checkpoints before PEFT")
-    if args.resume_from_checkpoint is not None:
-        model, checkpoint, resume_from_epoch, message = resume_from_checkpoints(
-            model, args.resume_from_checkpoint, args, logger
-        )
-
+    # Prepare model for tuning (PEFT/LoRA etc.) before wrapping with DDP/FSDP
     model, config = prepare_model_for_tuning(model, args.tuning_config)
 
-    if (
-        config["from_pretrained"] or config["lora"]
-    ) and args.resume_from_checkpoint is not None:
-        logger.info("loading checkpoints after PEFT")
-        model, checkpoint, resume_from_epoch, message = resume_from_checkpoints(
-            model, args.resume_from_checkpoint, args, logger
-        )
+    # Defer checkpoint loading until after DDP/FSDP wrapping (see below)
+    checkpoint = None
+    resume_from_epoch = 0
 
     if args.rank == 0:
         logger.info(get_params_count_summary(model))
@@ -423,6 +413,18 @@ def main():
             model = model.to(cast_dtype)
         model = model.to(device_id)
         ddp_model = DDP(model, device_ids=[device_id])
+
+    # Now, after DDP/FSDP wrapping, load checkpoint if needed
+    if args.resume_from_checkpoint is not None:
+        logger.info(
+            "Loading checkpoint after DDP/FSDP wrapping (correct order for sharded/distributed training)"
+        )
+        ddp_model, checkpoint, resume_from_epoch, message = resume_from_checkpoints(
+            ddp_model, args.resume_from_checkpoint, args, logger
+        )
+    else:
+        checkpoint = None
+        resume_from_epoch = 0
 
     # Initialize gradient checkpointing
     if args.gradient_checkpointing:

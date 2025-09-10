@@ -25,13 +25,15 @@
 # --- Configuration Variables (Modify these as needed) ---
 # ==============================================================================
 # Training Parameters
-BATCH_SIZE=256
+TRAIN_BATCH_SIZE=1
+TEST_BATCH_SIZE=256
 LR=1e-4
 EPOCHS=50
+NUM_PROCESS=4
 LR_SCHEDULER="consine"
-CHECKPOINT_EPOCH=49 # The epoch number to use for inference and evaluation
+CHECKPOINT_EPOCH=35 # The epoch number to use for inference and evaluation
 WARMUP_STEPS=10
-RUN_CODE=0905
+RUN_CODE=0910_cot
 MODEL_SIZE="3b" # Options: "3b", "7b"
 MAX_LENGTH=512
 SEED=42
@@ -43,13 +45,13 @@ DATA_PATH="/app/baseline_models/sample_data/llama_mri_cot/instruct_flamingo"
 MODEL_PATH="/app/baseline_models/models/med-flamingo/model.pt" # A.K.A --resume_from_checkpoint
 LM_PATH="anas-awadalla/mpt-7b"
 VISION_ENCODER="ViT-L-14-336"
-TUNING_MODE="lora[lm+xqttn]+perceiver" # Options: "sft", "perceiver", "lora[lm+xqttn]+perceiver.json"
+TUNING_MODE="sft" # Options: "sft", "perceiver", "lora[lm+xqttn]+perceiver.json"
 TUNING_CONFIG="${INSTRUCT_FLAMINGO_ROOT}/open_flamingo/instruction_tuning/tuning_config/${TUNING_MODE}.json"
 RESULTS_DIR="predictions_validation"
 
 # Derived Variables (Do not edit)
 RUN_DIR="${INSTRUCT_FLAMINGO_ROOT}/runs"
-RUN_NAME="${RUN_CODE}-clever_flamingo_v2_${MODEL_SIZE}-${TUNING_MODE}-maxlength${MAX_LENGTH}-batch${BATCH_SIZE}-lr${LR}-epochs${EPOCHS}-lrsched${LR_SCHEDULER}-resume-from-mpt7b"
+RUN_NAME="${RUN_CODE}-clever_flamingo_v2_${MODEL_SIZE}-${TUNING_MODE}-maxlength${MAX_LENGTH}-batch${TRAIN_BATCH_SIZE}-lr${LR}-epochs${EPOCHS}-lrsched${LR_SCHEDULER}-resume-from-mpt7b"
 CHECKPOINT_PATH="${RUN_DIR}/${RUN_NAME}/checkpoint_${CHECKPOINT_EPOCH}.pt"
 INFERENCE_RESULT_FILE="${INSTRUCT_FLAMINGO_ROOT}/${RESULTS_DIR}/${RUN_NAME}-checkpoint_${CHECKPOINT_EPOCH}/eval_dataset_config_-1/llava-mri-cot-1k-test_all.json"
 # ------------------------------------------------------------------------------
@@ -101,8 +103,10 @@ if [ "$train_flag" = true ]; then
 
     export PYTHONPATH="$PYTHONPATH:open_flamingo"
     export NCCL_NVLS_ENABLE=0
+    export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
-    CUDA_VISIBLE_DEVICES='0,1,2,3,4,5,6,7' torchrun --nnodes=1 --nproc_per_node=8 --master_port=29502 open_flamingo/instruction_tuning/train.py \
+    # CUDA_VISIBLE_DEVICES='0,1,2,3,4,5,6,7' torchrun --nnodes=1 --nproc_per_node=8 --master_port=29502 open_flamingo/instruction_tuning/train.py \
+    CUDA_VISIBLE_DEVICES='0,1,2,3,4,5,6,7' accelerate launch --num_processes ${NUM_PROCESS} open_flamingo/instruction_tuning/train.py \
         --instruction_data "${DATA_PATH}/dataset_config.json" \
         --instruction_prompt_templete 'guanaco-no-prompt' \
         --run_name "${RUN_DIR}/${RUN_NAME}" \
@@ -121,7 +125,7 @@ if [ "$train_flag" = true ]; then
         --skip_check_overlength \
         --train_num_samples 10000 \
         --epoch_num_samples 50 \
-        --batch_size "${BATCH_SIZE}" \
+        --batch_size "${TRAIN_BATCH_SIZE}" \
         --learning_rate "${LR}" \
         --gradient_accumulation_steps 1 \
         --precision 'bf16' \
