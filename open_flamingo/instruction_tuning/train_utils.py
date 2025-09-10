@@ -16,6 +16,8 @@ import copy
 import json
 from peft import LoraConfig, get_peft_model, PeftModel
 
+# Import the Accelerator class
+from accelerate import Accelerator
 
 def get_cast_dtype(precision: str):
     cast_dtype = None
@@ -60,8 +62,10 @@ def train_one_epoch(
     tensorboard_writer,
     wandb,
 ):
+    # Do not wrap with accelerator.prepare() here; model, optimizer, dataloader, lr_scheduler should already be wrapped/prepared in the main script if needed.
+    
     # setup loaders
-    num_batches_per_epoch = dataloader.num_batches
+    num_batches_per_epoch = len(dataloader) # dataloader.num_batches
     total_training_steps = num_batches_per_epoch * args.num_epochs
 
     autocast = get_autocast(
@@ -111,14 +115,6 @@ def train_one_epoch(
         labels[target_mask == 0] = -100
 
         for i in range(labels.shape[0]):
-            # # remove loss for any token before the first <image> token
-            # label_idx = 0
-            # while (
-            #     label_idx < labels.shape[1] and labels[i][label_idx] != media_token_id
-            # ):
-            #     labels[i][label_idx] = -100
-            #     label_idx += 1
-
             # get index of all endofchunk tokens in the sequence
             endofchunk_idxs = torch.where(labels[i] == endofchunk_token_id)[0]
             for endofchunk_idx in endofchunk_idxs:
@@ -146,12 +142,9 @@ def train_one_epoch(
             # if loss is nan, skip this batch
             # this hack of skipping the batch is not FSDP-compatible
             if torch.isnan(loss):
-                # print("loss is nan, skipping this batch")
                 print("input_ids: ", tokenizer.batch_decode(input_ids))
                 print("labels: ", labels)
                 print("images: ", images)
-                # optimizer.zero_grad(set_to_none=True)
-                # continue
                 print("loss is nan")
 
         divided_loss = loss / args.gradient_accumulation_steps
@@ -184,12 +177,6 @@ def train_one_epoch(
 
         # clip gradient norm
         if args.fsdp:
-            """
-            The way we clip gradients with FSDP is different than the non-FSDP case,
-            because during FSDP, gradient norms are computed over certain submodules,
-            rather than the entire model.
-            At least for OPT-125M, this didn't seem to make a difference in performance.
-            """
             grad_norm = model.clip_grad_norm_(1.0)
         else:
             grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
@@ -208,13 +195,17 @@ def train_one_epoch(
             step_time_m.update(time.time() - end)
             end = time.time()
 
-            average_loss_tensor = torch.tensor(accumulated_loss, device=args.device)
-            dist.all_reduce(average_loss_tensor, op=dist.ReduceOp.SUM)
-            average_loss = average_loss_tensor.item() / args.world_size
+            # Reduce loss across all processes for logging
+            average_loss_tensor = torch.tensor(accumulated_loss, device=device_id)
+            if dist.is_initialized() and dist.get_world_size() > 1:
+                dist.all_reduce(average_loss_tensor, op=dist.ReduceOp.SUM)
+                average_loss = average_loss_tensor.item() / dist.get_world_size()
+            else:
+                average_loss = average_loss_tensor.item()
             accumulated_loss = 0.0
 
             # rank 0 logging
-            if args.rank == 0:  # and args.report_to_wandb:
+            if args.rank == 0:
                 samples_per_second = (
                     args.gradient_accumulation_steps
                     * args.batch_size
@@ -238,32 +229,10 @@ def train_one_epoch(
                     samples_per_second_per_gpu,
                     global_step,
                 )
-                # wandb.log(
-                #     {
-                #         "data_time": data_time_m.avg,
-                #         "step_time": step_time_m.avg,
-                #         "laion_samples_per_second": laion_samples_per_second,
-                #         "laion_samples_per_second_per_gpu": laion_samples_per_second_per_gpu,
-                #         "c4_samples_per_second": c4_samples_per_second,
-                #         "c4_samples_per_second_per_gpu": c4_samples_per_second_per_gpu,
-                #         "lr": optimizer.param_groups[0]["lr"],
-                #     },
-                #     commit=False,
-                # )
+
                 step_time_m.reset()
                 data_time_m.reset()
 
-                # wandb.log(
-                #     {
-                #         "loss_laion": loss_laion.item(),
-                #         "global_step": global_step,
-                #     },
-                #     commit=False,
-                # )
-                # wandb.log(
-                #     {"loss_mmc4": loss_mmc4.item(), "global_step": global_step},
-                #     commit=True,
-                # )
                 tensorboard_writer.add_scalar("train/loss", average_loss, global_step)
                 tensorboard_writer.add_scalar(
                     "train/lr", optimizer.param_groups[0]["lr"], global_step
@@ -274,32 +243,6 @@ def train_one_epoch(
 
         # Log loss to console
         if ((num_steps + 1) % args.logging_steps == 0) and args.rank == 0:
-
-            # input_tokens = tokenizer.convert_ids_to_tokens(input_ids[0].squeeze().tolist())
-            # input_text = tokenizer.convert_tokens_to_string(input_tokens)
-            # print('[input_ids]')
-            # # print(input_ids[0])
-            # print(input_text)
-            # print('-'*128)
-
-            # labels_ = copy.deepcopy(labels)
-            # labels_[labels == -100] = 1
-            # mask_token = tokenizer.convert_tokens_to_string(tokenizer.convert_ids_to_tokens([1]))
-            # label_tokens = tokenizer.convert_ids_to_tokens(labels_[0].squeeze().tolist())
-            # label_text = tokenizer.convert_tokens_to_string(label_tokens).replace(mask_token, ' ')
-            # print('[labels]')
-            # # print(labels[0])
-            # print(label_text)
-            # print('-'*128)
-
-            # probs = torch.softmax(logits, dim=-1)
-            # predicted_token_indexes = torch.argmax(probs, dim=-1)
-            # predicted_token_indexes[labels == -100] = 1
-            # predicted_tokens = tokenizer.convert_ids_to_tokens(predicted_token_indexes[0].squeeze().tolist())
-            # predicted_text = tokenizer.convert_tokens_to_string(predicted_tokens).replace(mask_token, ' ')
-            # print('[predicted]')
-            # # print(predicted_token_indexes[0])
-            # print(predicted_text)
             logger.info(
                 f"Step {num_steps+1}/{num_batches_per_epoch} of epoch {epoch+1}/{args.num_epochs} complete. Loss: {loss.item():.7f}. LR: {optimizer.param_groups[0]['lr']:.7f}"
             )
