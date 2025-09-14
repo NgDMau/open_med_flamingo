@@ -1,86 +1,3 @@
-# import re
-# import json
-# import argparse
-# from tqdm import tqdm
-
-
-# def extract_answer_regex(text: str) -> str:
-#     """
-#     Extracts a hyphenated word following 'Final Answer: ' using regex.
-
-#     Args:
-#         text: The input string to search.
-
-#     Returns:
-#         The extracted word (e.g., 'Mild-Dementia') or None if no match is found.
-#     """
-#     # This pattern looks for "Final Answer:", followed by optional whitespace,
-#     # and then captures a sequence of word characters and hyphens.
-#     match = re.search(r"Final Answer:\s*([\w-]+)", text)
-
-#     if match:
-#         return match.group(1)  # Return the first captured group
-#     return "None"
-
-
-# if __name__ == "__main__":
-
-#     default_inference_result = "/mnt/data/nict/maund/baseline_models/instruct_flamingo/predictions_validation/0821-clever_flamingo_v2_3b-2k_context-40G-resume-from-mpt7b-checkpoint-03-checkpoint_15/eval_dataset_config_-1/llava-mri-cot-1k-test_all.json"
-
-#     # make inference_result path a command line argument: --inference_result
-
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument(
-#         "--inference_result", type=str, default=default_inference_result
-#     )
-#     args = parser.parse_args()
-
-#     inference_result = args.inference_result
-
-#     with open(inference_result, "r") as f:
-#         data = json.load(f)
-
-#     correct_format = 0
-#     match = 0
-
-#     for result in tqdm(data):
-#         output = result["output"]
-#         target = result["target"]
-
-#         answer = extract_answer_regex(output)
-#         if answer and target:
-#             answer = answer.lower().replace(" ", "")
-#             target = target.lower().replace(" ", "")
-
-#             print("---------")
-#             if "-" in answer:
-#                 correct_format += 1
-#             if (not (answer == target)) and ("-" not in answer):
-#                 print(f"Output: {output}")
-#                 print(f"Answer: {answer}")
-#                 print(f"Target: {target}")
-#             if answer == target:
-#                 match += 1
-
-#     # Get inference folder from inference_result path
-#     inference_folder = "/".join(inference_result.split("/")[:-1])
-
-#     accuracy = match / len(data) * 100
-#     correct_format = correct_format / len(data) * 100
-
-#     result = {
-#         "accuracy": accuracy,
-#         "correct_format": correct_format,
-#         "num_samples": len(data),
-#     }
-
-#     with open(f"{inference_folder}/evaluation.json", "w") as f:
-#         json.dump(result, f, indent=4)
-
-#     print(f"Accuracy: {accuracy}%")
-#     print(f"Correct Format: {correct_format}%")
-
-
 import re
 import json
 import argparse
@@ -116,6 +33,10 @@ if __name__ == "__main__":
     # --- ADDED: Lists to store all labels for F1 calculation ---
     y_true = []
     y_pred = []
+    
+    valid_classes = {"non-dementia", "mild-dementia", "moderate-dementia"}
+
+    results_to_save = []
 
     for result in tqdm(data):
         output = result["output"]
@@ -123,7 +44,7 @@ if __name__ == "__main__":
         answer = extract_answer_regex(output)
 
         if answer and target:
-            output = output.lower()
+            output = output.lower().replace(" ", "")
             answer = answer.lower().replace(" ", "")
             target = target.lower().replace(" ", "")
 
@@ -131,8 +52,13 @@ if __name__ == "__main__":
             y_true.append(target)
             if output == target:
                 y_pred.append(output)
-            else:
+            elif answer in valid_classes:
                 y_pred.append(answer)
+            elif output in valid_classes:
+                y_pred.append(output)
+            else:
+                
+                y_pred.append("invalid")  # For any invalid prediction
 
             print("---------")
             if "-" in answer or "-" in output:
@@ -143,52 +69,156 @@ if __name__ == "__main__":
                 print(f"Target: {target}")
             if answer == target or output == target:
                 match += 1
+                
+            # results_to_save.append(
+            #     {
+            #         "image": result["image"],
+            #         "question": result["question"],
+            #         "output": output,
+            #         "target": target,
+            #         "answer": answer,
+            #         "correct": answer == target or output == target,
+            #     }
+            # )
 
     inference_folder = "/".join(inference_result.split("/")[:-1])
 
     accuracy = match / len(data) * 100
     correct_format = correct_format / len(data) * 100
 
-    # --- ADDED: Calculate F1 scores ---
-    # 'macro': Calculate metrics for each label, and find their unweighted mean.
-    #          This does not take label imbalance into account.
-    f1_macro = f1_score(y_true, y_pred, average="macro", zero_division=0) * 100
+    # # --- ADDED: Calculate F1 scores ---
+    # # 'macro': Calculate metrics for each label, and find their unweighted mean.
+    # #          This does not take label imbalance into account.
+    # f1_macro = f1_score(y_true, y_pred, average="macro", zero_division=0) * 100
 
-    # 'weighted': Calculate metrics for each label, and find their average
-    #             weighted by support (the number of true instances for each label).
-    f1_weighted = f1_score(y_true, y_pred, average="weighted", zero_division=0) * 100
+    # # 'weighted': Calculate metrics for each label, and find their average
+    # #             weighted by support (the number of true instances for each label).
+    # f1_weighted = f1_score(y_true, y_pred, average="weighted", zero_division=0) * 100
 
-    result = {
-        "accuracy": accuracy,
-        "f1_macro": f1_macro,  # <-- ADDED
-        "f1_weighted": f1_weighted,  # <-- ADDED
-        "correct_format": correct_format,
-        "num_samples": len(data),
-    }
+    # result = {
+    #     "accuracy": accuracy,
+    #     "f1_macro": f1_macro,  # <-- ADDED
+    #     "f1_weighted": f1_weighted,  # <-- ADDED
+    #     "correct_format": correct_format,
+    #     "num_samples": len(data),
+    # }
+    
+    
+# The rest of your code is fine
+# result = {
+#     "accuracy": accuracy,
+#     "f1_macro": f1_macro,
+#     "f1_weighted": f1_weighted,
+#     "correct_format": correct_format,
+#     "num_samples": len(data),
+# }
 
     # Save confusion matrix for further analysis
-    from sklearn.metrics import confusion_matrix
-    import numpy as np
-    import matplotlib.pyplot as plt
-    import seaborn as sns
+    # from sklearn.metrics import confusion_matrix
+    # import numpy as np
+    # import matplotlib.pyplot as plt
+    # import seaborn as sns
 
-    cm = confusion_matrix(y_true, y_pred, labels=np.unique(y_true))
+    # cm = confusion_matrix(y_true, y_pred, labels=np.unique(y_true))
+    # plt.figure(figsize=(10, 7))
+    # sns.heatmap(
+    #     cm,
+    #     annot=True,
+    #     fmt="d",
+    #     xticklabels=np.unique(y_true),
+    #     yticklabels=np.unique(y_true),
+    # )
+    # plt.xlabel("Predicted")
+    # plt.ylabel("True")
+    # plt.title("Confusion Matrix")
+    # plt.savefig(f"{inference_folder}/confusion_matrix.png")
+    # print(f"Confusion matrix saved to {inference_folder}/confusion_matrix.png")
+    
+    import numpy as np
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+    from sklearn.metrics import confusion_matrix
+
+    # --- Assume y_true and y_pred are your data lists ---
+
+    # 1. Define your labels explicitly
+    # The labels that are actually correct (True classes)
+    true_labels = sorted(list(np.unique(y_true))) 
+    # All possible outputs, including the invalid ones (Predicted classes)
+    all_labels = true_labels + ["invalid"]
+
+    # 2. Calculate the matrix using the complete list of labels
+    # This ensures 'Invalid' predictions are counted in a new column
+    cm = confusion_matrix(y_true, y_pred, labels=all_labels)
+
+    # 3. Slice the matrix to remove the "Invalid" row
+    # Since "Invalid" is not a true class, its row in the matrix will be all zeros.
+    # We select all rows corresponding to the true_labels and all columns.
+    cm = cm[:len(true_labels), :]
+
+    # 4. Plot the heatmap with correct labels
     plt.figure(figsize=(10, 7))
     sns.heatmap(
         cm,
         annot=True,
         fmt="d",
-        xticklabels=np.unique(y_true),
-        yticklabels=np.unique(y_true),
+        # xticklabels should show all possible predictions, including 'Invalid'
+        xticklabels=all_labels, 
+        # yticklabels should only show the true classes
+        yticklabels=true_labels, 
     )
     plt.xlabel("Predicted")
     plt.ylabel("True")
-    plt.title("Confusion Matrix")
+    plt.title("Confusion Matrix (with Invalid Class)")
+    # Make sure to create the folder if it doesn't exist
+    import os
+    os.makedirs(inference_folder, exist_ok=True)
     plt.savefig(f"{inference_folder}/confusion_matrix.png")
     print(f"Confusion matrix saved to {inference_folder}/confusion_matrix.png")
+    plt.show() # Using show() for demonstration
+    
+    from sklearn.metrics import f1_score
+    import numpy as np
+
+    # --- Assume y_true and y_pred are your data lists ---
+
+    # 1. Define the list of true labels you want to evaluate
+    # true_labels = sorted(list(np.unique(y_true)))
+
+    # 2. Calculate F1 scores using the 'labels' parameter
+    # This forces the calculation to be based only on the true classes.
+    # Predictions of "Invalid" will correctly count as False Negatives for them.
+    f1_macro = f1_score(
+        y_true, 
+        y_pred, 
+        labels=true_labels,  # <-- The crucial fix
+        average="macro", 
+        zero_division=0
+    ) * 100
+
+    f1_weighted = f1_score(
+        y_true, 
+        y_pred, 
+        labels=true_labels,  # <-- The crucial fix
+        average="weighted", 
+        zero_division=0
+    ) * 100
+    
+    
+    result = {
+        "accuracy": accuracy,
+        "f1_macro": f1_macro,
+        "f1_weighted": f1_weighted,
+        "correct_format": correct_format,
+        "num_samples": len(data),
+    }
+
 
     with open(f"{inference_folder}/evaluation.json", "w") as f:
         json.dump(result, f, indent=4)
+        
+    # with open(f"{inference_folder}/detailed_results.json", "w") as f:
+    #     json.dump(results_to_save, f, indent=4)
 
     print(f"Accuracy: {accuracy:.2f}%")
     print(f"F1 Score (Macro): {f1_macro:.2f}%")  # <-- ADDED

@@ -77,6 +77,12 @@ conda activate instruct_flamingo
 pip install -r requirements.txt
 ```
 
+Install transformers and sentence-transformers, just follow the current requirements.
+Then, install PyTorch 2.7.0
+```bash
+pip install torch==2.7.0 torchvision==0.22.0 torchaudio==2.7.0 --index-url https://download.pytorch.org/whl/cu126
+```
+
 <!-- Additionally, as in our method LoRA adapter need to be inserted to the language model, a [PEFT](https://github.com/huggingface/peft) installation is required. Tensorboard should also be installed for logging.
 
 ```bash
