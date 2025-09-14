@@ -33,7 +33,7 @@ if __name__ == "__main__":
     # --- ADDED: Lists to store all labels for F1 calculation ---
     y_true = []
     y_pred = []
-    
+
     valid_classes = {"non-dementia", "mild-dementia", "moderate-dementia"}
 
     results_to_save = []
@@ -57,7 +57,7 @@ if __name__ == "__main__":
             elif output in valid_classes:
                 y_pred.append(output)
             else:
-                
+
                 y_pred.append("invalid")  # For any invalid prediction
 
             print("---------")
@@ -69,7 +69,7 @@ if __name__ == "__main__":
                 print(f"Target: {target}")
             if answer == target or output == target:
                 match += 1
-                
+
             # results_to_save.append(
             #     {
             #         "image": result["image"],
@@ -102,16 +102,15 @@ if __name__ == "__main__":
     #     "correct_format": correct_format,
     #     "num_samples": len(data),
     # }
-    
-    
-# The rest of your code is fine
-# result = {
-#     "accuracy": accuracy,
-#     "f1_macro": f1_macro,
-#     "f1_weighted": f1_weighted,
-#     "correct_format": correct_format,
-#     "num_samples": len(data),
-# }
+
+    # The rest of your code is fine
+    # result = {
+    #     "accuracy": accuracy,
+    #     "f1_macro": f1_macro,
+    #     "f1_weighted": f1_weighted,
+    #     "correct_format": correct_format,
+    #     "num_samples": len(data),
+    # }
 
     # Save confusion matrix for further analysis
     # from sklearn.metrics import confusion_matrix
@@ -133,7 +132,7 @@ if __name__ == "__main__":
     # plt.title("Confusion Matrix")
     # plt.savefig(f"{inference_folder}/confusion_matrix.png")
     # print(f"Confusion matrix saved to {inference_folder}/confusion_matrix.png")
-    
+
     import numpy as np
     import seaborn as sns
     import matplotlib.pyplot as plt
@@ -143,7 +142,7 @@ if __name__ == "__main__":
 
     # 1. Define your labels explicitly
     # The labels that are actually correct (True classes)
-    true_labels = sorted(list(np.unique(y_true))) 
+    true_labels = sorted(list(np.unique(y_true)))
     # All possible outputs, including the invalid ones (Predicted classes)
     all_labels = true_labels + ["invalid"]
 
@@ -154,7 +153,7 @@ if __name__ == "__main__":
     # 3. Slice the matrix to remove the "Invalid" row
     # Since "Invalid" is not a true class, its row in the matrix will be all zeros.
     # We select all rows corresponding to the true_labels and all columns.
-    cm = cm[:len(true_labels), :]
+    cm = cm[: len(true_labels), :]
 
     # 4. Plot the heatmap with correct labels
     plt.figure(figsize=(10, 7))
@@ -163,20 +162,21 @@ if __name__ == "__main__":
         annot=True,
         fmt="d",
         # xticklabels should show all possible predictions, including 'Invalid'
-        xticklabels=all_labels, 
+        xticklabels=all_labels,
         # yticklabels should only show the true classes
-        yticklabels=true_labels, 
+        yticklabels=true_labels,
     )
     plt.xlabel("Predicted")
     plt.ylabel("True")
     plt.title("Confusion Matrix (with Invalid Class)")
     # Make sure to create the folder if it doesn't exist
     import os
+
     os.makedirs(inference_folder, exist_ok=True)
     plt.savefig(f"{inference_folder}/confusion_matrix.png")
     print(f"Confusion matrix saved to {inference_folder}/confusion_matrix.png")
-    plt.show() # Using show() for demonstration
-    
+    plt.show()  # Using show() for demonstration
+
     from sklearn.metrics import f1_score
     import numpy as np
 
@@ -188,23 +188,28 @@ if __name__ == "__main__":
     # 2. Calculate F1 scores using the 'labels' parameter
     # This forces the calculation to be based only on the true classes.
     # Predictions of "Invalid" will correctly count as False Negatives for them.
-    f1_macro = f1_score(
-        y_true, 
-        y_pred, 
-        labels=true_labels,  # <-- The crucial fix
-        average="macro", 
-        zero_division=0
-    ) * 100
+    f1_macro = (
+        f1_score(
+            y_true,
+            y_pred,
+            labels=true_labels,  # <-- The crucial fix
+            average="macro",
+            zero_division=0,
+        )
+        * 100
+    )
 
-    f1_weighted = f1_score(
-        y_true, 
-        y_pred, 
-        labels=true_labels,  # <-- The crucial fix
-        average="weighted", 
-        zero_division=0
-    ) * 100
-    
-    
+    f1_weighted = (
+        f1_score(
+            y_true,
+            y_pred,
+            labels=true_labels,  # <-- The crucial fix
+            average="weighted",
+            zero_division=0,
+        )
+        * 100
+    )
+
     result = {
         "accuracy": accuracy,
         "f1_macro": f1_macro,
@@ -213,10 +218,9 @@ if __name__ == "__main__":
         "num_samples": len(data),
     }
 
-
     with open(f"{inference_folder}/evaluation.json", "w") as f:
         json.dump(result, f, indent=4)
-        
+
     # with open(f"{inference_folder}/detailed_results.json", "w") as f:
     #     json.dump(results_to_save, f, indent=4)
 

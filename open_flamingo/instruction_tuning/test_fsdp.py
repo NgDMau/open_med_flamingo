@@ -11,7 +11,9 @@ os.environ["MASTER_PORT"] = "12355"
 dist.init_process_group(backend="nccl", rank=0, world_size=1)
 
 
-model = AutoModelForCausalLM.from_pretrained("anas-awadalla/mpt-7b", dtype="auto", device_map="auto")
+model = AutoModelForCausalLM.from_pretrained(
+    "anas-awadalla/mpt-7b", dtype="auto", device_map="auto"
+)
 print(type(model))
 assert isinstance(model, MptForCausalLM)
 
