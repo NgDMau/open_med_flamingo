@@ -361,16 +361,24 @@ def main():
         batch_img_paths.append(img_paths)
         batch_samples.append(sample)
         batch_indices.append(index)
-        
+
         # --- Add this block to check token length ---
         # Count text tokens
-        text_token_counts = [len(inferencer.tokenizer(prompt)["input_ids"]) for prompt in batch_prompts]
+        text_token_counts = [
+            len(inferencer.tokenizer(prompt)["input_ids"]) for prompt in batch_prompts
+        ]
         # Count image tokens (assuming each <image> token is a special token in the prompt)
         image_token_counts = [prompt.count("<image>") for prompt in batch_prompts]
         # Total tokens (text + image)
-        total_token_counts = [t + i for t, i in zip(text_token_counts, image_token_counts)]
-        for idx, (t, i, total) in enumerate(zip(text_token_counts, image_token_counts, total_token_counts)):
-            logger.info(f"Sample {batch_indices[idx]}: text tokens={t}, image tokens={i}, total tokens={total}")
+        total_token_counts = [
+            t + i for t, i in zip(text_token_counts, image_token_counts)
+        ]
+        for idx, (t, i, total) in enumerate(
+            zip(text_token_counts, image_token_counts, total_token_counts)
+        ):
+            logger.info(
+                f"Sample {batch_indices[idx]}: text tokens={t}, image tokens={i}, total tokens={total}"
+            )
         # --- End block ---
 
         # If batch is full or last sample, run inference

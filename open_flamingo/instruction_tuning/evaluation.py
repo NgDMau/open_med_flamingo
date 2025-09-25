@@ -42,7 +42,7 @@ if __name__ == "__main__":
         output = result["output"]
         target = result["target"]
         answer = extract_answer_regex(output)
-        
+
         final_answer = ""
 
         if output and target:
@@ -72,7 +72,7 @@ if __name__ == "__main__":
                 if last_class == "":
                     y_pred.append("invalid")  # For any invalid prediction
                     final_answer = answer
-                
+
                 print(f"Output: {output}")
                 print(f"Answer: {answer}")
                 print(f"Target: {target}")
@@ -80,7 +80,7 @@ if __name__ == "__main__":
             print("---------")
             if "-" in answer or "-" in output:
                 correct_format += 1
-                
+
             if final_answer == target or output == target or answer == target:
                 match += 1
 
