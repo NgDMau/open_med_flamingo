@@ -35,10 +35,13 @@ parser.add_argument("--num_beams", type=int, default=1)
 parser.add_argument("--temperature", type=float, default=1)
 parser.add_argument("--top_k", type=float, default=20)
 parser.add_argument("--top_p", type=float, default=1)
-parser.add_argument("--do_sample", type=bool, default=True)
+parser.add_argument("--do_sample", type=bool, default=False)
 parser.add_argument("--no_repeat_ngram_size", type=int, default=3)
 parser.add_argument("--length_penalty", type=float, default=1)
 parser.add_argument("--max_length", type=int, default=1024)
+
+# Add batch_size as arg
+parser.add_argument("--batch_size", type=int, default=8)
 
 # Dataset Configs - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 parser.add_argument(
@@ -324,7 +327,10 @@ def main():
     dataset_names = []
     dataset_results = defaultdict(list)
 
-    batch_size = 8  # You can adjust this value as needed
+    batch_size = args.batch_size  # You can adjust this value as needed
+    print("Using batch size:", batch_size)
+    batch_size = 8
+    print("Change to batch size:", batch_size)
     batch_prompts = []
     batch_img_paths = []
     batch_samples = []
@@ -356,6 +362,25 @@ def main():
         batch_samples.append(sample)
         batch_indices.append(index)
 
+        # --- Add this block to check token length ---
+        # Count text tokens
+        text_token_counts = [
+            len(inferencer.tokenizer(prompt)["input_ids"]) for prompt in batch_prompts
+        ]
+        # Count image tokens (assuming each <image> token is a special token in the prompt)
+        image_token_counts = [prompt.count("<image>") for prompt in batch_prompts]
+        # Total tokens (text + image)
+        total_token_counts = [
+            t + i for t, i in zip(text_token_counts, image_token_counts)
+        ]
+        for idx, (t, i, total) in enumerate(
+            zip(text_token_counts, image_token_counts, total_token_counts)
+        ):
+            logger.info(
+                f"Sample {batch_indices[idx]}: text tokens={t}, image tokens={i}, total tokens={total}"
+            )
+        # --- End block ---
+
         # If batch is full or last sample, run inference
         if len(batch_prompts) == batch_size or count == len(indices) - 1:
             predictions, full_texts = inferencer(
@@ -385,15 +410,6 @@ def main():
                     }
                 )
                 dataset_names.append(dataset_name)
-                # if rank == 0:
-                #     print("-" * 64)
-                #     print(
-                #         f'[dataset]:   {dataset_name} ({sample["dataset_idx"] + 1}/{len(dataset.configs)})'
-                #     )
-                #     print(f"[images]:    {batch_img_paths[i]}")
-                #     print(f"[prompt]:    {prompt_clean}")
-                #     print(f"\n*** PREDICTION ***\n{prediction}")
-                #     print(f'\n*** TARGET ***\n{sample["output"]}')
 
             # Save results every 10 samples (not every batch)
             if count % 10 == 0:

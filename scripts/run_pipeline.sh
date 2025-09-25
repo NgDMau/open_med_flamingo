@@ -25,25 +25,32 @@
 # --- Configuration Variables (Modify these as needed) ---
 # ==============================================================================
 # Training Parameters
+ENV_NAME="instruct_flamingo" # Name of the conda environment
+MIX_PRECISION="bf16" #{no,fp16,bf16,fp8} (str)
 TRAIN_BATCH_SIZE=1
-TEST_BATCH_SIZE=256
+TEST_BATCH_SIZE=128
 LR=1e-4
-EPOCHS=50
-NUM_PROCESS=4
+EPOCHS=35
+NUM_PROCESS=5
 LR_SCHEDULER="consine"
-CHECKPOINT_EPOCH=35 # The epoch number to use for inference and evaluation
+CHECKPOINT_EPOCH=14 # The epoch number to use for inference and evaluation
 WARMUP_STEPS=10
-RUN_CODE=0910_cot
+# RUN_CODE=09223_medrag_cot_500tok for medrag cot 500tok v1
+RUN_CODE=0924_medragv2_no_cot_resize_bbox_img336
 MODEL_SIZE="3b" # Options: "3b", "7b"
-MAX_LENGTH=512
+MAX_LENGTH=1024
 SEED=42
+CUDA_VISIBLE_DEVICES='1,2,3,4,5'
 # ------------------------------------------------------------------------------
 
 # Path Configuration
 INSTRUCT_FLAMINGO_ROOT="/app/baseline_models/instruct_flamingo"
 DATA_PATH="/app/baseline_models/sample_data/llama_mri_cot/instruct_flamingo"
-MODEL_PATH="/app/baseline_models/models/med-flamingo/model.pt" # A.K.A --resume_from_checkpoint
+# MODEL_PATH="/app/baseline_models/models/med-flamingo/model.pt" # For 3b model A.K.A --resume_from_checkpoint
+MODEL_PATH="/app/baseline_models/models/OpenFlamingo-9B-vitl-mpt7b/checkpoint.pt" # For 9b model A.K.A --resume_from_checkpoint
 LM_PATH="anas-awadalla/mpt-7b"
+# LM_PATH="/mnt/data/nict/maund/baseline_models/models/Meta-Llama-3-8B-Instruct"
+# LM_PATH="mosaicml/mpt-7b-8k"
 VISION_ENCODER="ViT-L-14-336"
 TUNING_MODE="sft" # Options: "sft", "perceiver", "lora[lm+xqttn]+perceiver.json"
 TUNING_CONFIG="${INSTRUCT_FLAMINGO_ROOT}/open_flamingo/instruction_tuning/tuning_config/${TUNING_MODE}.json"
@@ -98,7 +105,7 @@ if [ "$train_flag" = true ]; then
     echo "activating virtual environment"
     source ~/.bashrc
     eval "$(conda shell.bash hook)"
-    conda activate instruct_flamingo
+    conda activate ${ENV_NAME}
     which python
 
     export PYTHONPATH="$PYTHONPATH:open_flamingo"
@@ -106,7 +113,7 @@ if [ "$train_flag" = true ]; then
     export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
     # CUDA_VISIBLE_DEVICES='0,1,2,3,4,5,6,7' torchrun --nnodes=1 --nproc_per_node=8 --master_port=29502 open_flamingo/instruction_tuning/train.py \
-    CUDA_VISIBLE_DEVICES='0,1,2,3,4,5,6,7' accelerate launch --num_processes ${NUM_PROCESS} open_flamingo/instruction_tuning/train.py \
+    CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} accelerate launch --num_processes ${NUM_PROCESS} --mixed-precision ${MIX_PRECISION} open_flamingo/instruction_tuning/train.py \
         --instruction_data "${DATA_PATH}/dataset_config.json" \
         --instruction_prompt_templete 'guanaco-no-prompt' \
         --run_name "${RUN_DIR}/${RUN_NAME}" \
@@ -150,10 +157,12 @@ if [ "$inference_flag" = true ]; then
     echo "activating virtual environment"
     source ~/.bashrc
     eval "$(conda shell.bash hook)"
-    conda activate instruct_flamingo
+    conda activate ${ENV_NAME}
     which python
-    
-    CUDA_VISIBLE_DEVICES='0,1,2,3,4,5,6,7' torchrun --nnodes=1 --nproc_per_node=8 --master_port=29502 open_flamingo/instruction_tuning/instruction_dataset_inference_llava_cot_distributed.py \
+
+    export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+
+    CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} torchrun --nnodes=1 --nproc_per_node=${NUM_PROCESS} --master_port=29502 open_flamingo/instruction_tuning/instruction_dataset_inference_llava_cot_distributed.py \
         --lm_path "${LM_PATH}" \
         --vision_encoder_path "${VISION_ENCODER}" \
         --vision_encoder_pretrained "openai" \
@@ -163,9 +172,10 @@ if [ "$inference_flag" = true ]; then
         --instruction_path "${DATA_PATH}/eval_dataset_config.json" \
         --instruction_prompt_templete 'guanaco-no-prompt' \
         --num_samples -1 \
-        --max_new_token 512 \
+        --max_new_token 16 \
         --no_repeat_ngram_size 3 \
         --num_beams 1 \
+        --do_sample False \
         --seed 42 \
         --results_dir "${RESULTS_DIR}"
         
@@ -185,7 +195,7 @@ if [ "$evaluation_flag" = true ]; then
     echo "activating virtual environment"
     source ~/.bashrc
     eval "$(conda shell.bash hook)"
-    conda activate instruct_flamingo
+    conda activate ${ENV_NAME}
     which python
     
     python open_flamingo/instruction_tuning/evaluation.py \

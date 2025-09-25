@@ -65,8 +65,29 @@ git clone https://github.com/ChenDelong1999/instruct_flamingo.git
 
 Our code is developed upon [OpenFlamingo](https://github.com/mlfoundations/open_flamingo), and therefore inherits its environment dependencies. One can use an OpenFlamingo environment to run our code, or create one by:
 
+(Deprecated)
 ```bash
 conda env create -f environment.yml
+```
+
+New installation:
+Create new env:
+```bash
+conda create -n instruct_flamingo python=3.10
+```
+Then install packages:
+```bash
+pip install -r requirements.txt
+```
+
+Install sentence-transformers:
+```bash
+pip install sentence-transformers
+```
+
+Then, install PyTorch 2.7.0
+```bash
+pip install torch==2.7.0 torchvision==0.22.0 torchaudio==2.7.0 --index-url https://download.pytorch.org/whl/cu126
 ```
 
 Note: please avoid using environment with pip installed `open-flamingo` package to avoid import conflicts.
@@ -76,6 +97,8 @@ Install packages into newly created env:
 conda activate instruct_flamingo
 pip install -r requirements.txt
 ```
+
+
 
 <!-- Additionally, as in our method LoRA adapter need to be inserted to the language model, a [PEFT](https://github.com/huggingface/peft) installation is required. Tensorboard should also be installed for logging.
 
