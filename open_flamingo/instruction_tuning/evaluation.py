@@ -42,9 +42,11 @@ if __name__ == "__main__":
         output = result["output"]
         target = result["target"]
         answer = extract_answer_regex(output)
+        
+        final_answer = ""
 
-        if answer and target:
-            output = output.lower().replace(" ", "")
+        if output and target:
+            output = output.lower()
             answer = answer.lower().replace(" ", "")
             target = target.lower().replace(" ", "")
 
@@ -52,22 +54,34 @@ if __name__ == "__main__":
             y_true.append(target)
             if output == target:
                 y_pred.append(output)
+                final_answer = output
             elif answer in valid_classes:
                 y_pred.append(answer)
+                final_answer = answer
             elif output in valid_classes:
                 y_pred.append(output)
+                final_answer = output
             else:
-
-                y_pred.append("invalid")  # For any invalid prediction
+                last_class = ""
+                for class_name in valid_classes:
+                    if class_name in output:
+                        y_pred.append(class_name)
+                        last_class = class_name
+                        final_answer = class_name
+                        break
+                if last_class == "":
+                    y_pred.append("invalid")  # For any invalid prediction
+                    final_answer = answer
+                
+                print(f"Output: {output}")
+                print(f"Answer: {answer}")
+                print(f"Target: {target}")
 
             print("---------")
             if "-" in answer or "-" in output:
                 correct_format += 1
-            if (not (answer == target)) and ("-" not in answer):
-                print(f"Output: {output}")
-                print(f"Answer: {answer}")
-                print(f"Target: {target}")
-            if answer == target or output == target:
+                
+            if final_answer == target or output == target or answer == target:
                 match += 1
 
             # results_to_save.append(
@@ -86,52 +100,11 @@ if __name__ == "__main__":
     accuracy = match / len(data) * 100
     correct_format = correct_format / len(data) * 100
 
-    # # --- ADDED: Calculate F1 scores ---
-    # # 'macro': Calculate metrics for each label, and find their unweighted mean.
-    # #          This does not take label imbalance into account.
-    # f1_macro = f1_score(y_true, y_pred, average="macro", zero_division=0) * 100
-
-    # # 'weighted': Calculate metrics for each label, and find their average
-    # #             weighted by support (the number of true instances for each label).
-    # f1_weighted = f1_score(y_true, y_pred, average="weighted", zero_division=0) * 100
-
-    # result = {
-    #     "accuracy": accuracy,
-    #     "f1_macro": f1_macro,  # <-- ADDED
-    #     "f1_weighted": f1_weighted,  # <-- ADDED
-    #     "correct_format": correct_format,
-    #     "num_samples": len(data),
-    # }
-
-    # The rest of your code is fine
-    # result = {
-    #     "accuracy": accuracy,
-    #     "f1_macro": f1_macro,
-    #     "f1_weighted": f1_weighted,
-    #     "correct_format": correct_format,
-    #     "num_samples": len(data),
-    # }
-
-    # Save confusion matrix for further analysis
-    # from sklearn.metrics import confusion_matrix
-    # import numpy as np
-    # import matplotlib.pyplot as plt
-    # import seaborn as sns
-
-    # cm = confusion_matrix(y_true, y_pred, labels=np.unique(y_true))
-    # plt.figure(figsize=(10, 7))
-    # sns.heatmap(
-    #     cm,
-    #     annot=True,
-    #     fmt="d",
-    #     xticklabels=np.unique(y_true),
-    #     yticklabels=np.unique(y_true),
-    # )
-    # plt.xlabel("Predicted")
-    # plt.ylabel("True")
-    # plt.title("Confusion Matrix")
-    # plt.savefig(f"{inference_folder}/confusion_matrix.png")
-    # print(f"Confusion matrix saved to {inference_folder}/confusion_matrix.png")
+    # Save y_true and y_pred for debugging
+    with open(f"{inference_folder}/y_true.json", "w") as f:
+        json.dump(y_true, f, indent=4)
+    with open(f"{inference_folder}/y_pred.json", "w") as f:
+        json.dump(y_pred, f, indent=4)
 
     import numpy as np
     import seaborn as sns

@@ -281,6 +281,10 @@ def main():
 
     if args.rank == 0:
         logger.info(get_params_count_summary(model))
+        
+        total_trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        print(f"==> Total trainable parameters: {total_trainable_params:,}")
+        
         logger.info("args")
         for key, value in args.__dict__.items():
             logger.info("\t{:<30}\t{}".format(key + ":", value))
@@ -544,7 +548,8 @@ def main():
             tensorboard_writer=tensorboard_writer,
             wandb=wandb,
         )
-        save_checkpoint(ddp_model, optimizer, lr_scheduler, epoch, args)
+        if (epoch+1) % 5 == 0 or epoch == (args.num_epochs - 1):
+            save_checkpoint(ddp_model, optimizer, lr_scheduler, epoch, args)
 
         # reinitialize dataset to sample different images
         if epoch != (args.num_epochs - 1):
